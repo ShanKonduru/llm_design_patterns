@@ -17,5 +17,11 @@ pytest-cov          # Pytest plugin to measure code coverage.
 ipython             # Enhanced interactive Python shell, useful for debugging and exploration.
 arize-phoenix       # Dependency for Ragas, provides observability and tracing for LLM applications.
 
+# --- Classic NLP & Retrieval Metrics ---
+rouge-score         # For calculating ROUGE scores (n-gram overlap).
+sacrebleu           # For calculating BLEU scores (precision-focused overlap).
+bert-score          # For calculating semantic similarity using BERT embeddings.
+scikit-learn        # For classic machine learning metrics like MRR and nDCG helpers.
+
 
 pandas 

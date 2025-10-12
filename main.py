@@ -4,6 +4,7 @@ import argparse
 from dotenv import load_dotenv
 from langchain_core.exceptions import OutputParserException
 from src.llm_evaluation import RagasEvaluator, LLMFactory
+from src.classic_metrics import ClassicMetricEvaluator
 import pandas as pd
 
 load_dotenv()
@@ -47,6 +48,7 @@ class EvaluationRunner:
     def __init__(self):
         self.llm = LLMFactory.get_llm(llm_type="ollama", model_name="llama3.1:latest")
         self.evaluator = RagasEvaluator(self.llm)
+        self.classic_evaluator = ClassicMetricEvaluator()
         self._setup_scenarios()
 
     def _setup_scenarios(self):
@@ -63,7 +65,9 @@ class EvaluationRunner:
             "question": "What is the capital of Italy?",
             "answer": "The capital of Italy is Berlin.",
             "contexts": ["Rome is a city in Italy. It is known for its ancient history.", "Berlin is the capital of Germany."],
-            "ground_truth": "The capital of Italy is Rome."
+            "ground_truth": "The capital of Italy is Rome.",
+            "relevant_contexts": ["Rome is the capital of Italy.", "Rome is a city in Italy. It is known for its ancient history."],
+            "relevant_contexts_with_scores": [("Rome is the capital of Italy.", 1.0), ("Rome is a city in Italy. It is known for its ancient history.", 0.7)]
         }
 
     def _run_and_print_evaluation(self, metric_name, scenario, evaluation_func, explanation):
@@ -152,6 +156,53 @@ class EvaluationRunner:
             "The answer is factually incorrect. (Score should be low, ideally < 0.3)"
         )
 
+    def evaluate_rouge(self):
+        self._run_and_print_evaluation(
+            "rouge",
+            self.positive_scenario,
+            lambda: self.classic_evaluator.evaluate_rouge(self.positive_scenario['answer'], self.positive_scenario['ground_truth']),
+            "Measures n-gram overlap between answer and ground truth."
+        )
+
+    def evaluate_bleu(self):
+        self._run_and_print_evaluation(
+            "bleu",
+            self.positive_scenario,
+            lambda: self.classic_evaluator.evaluate_bleu(self.positive_scenario['answer'], self.positive_scenario['ground_truth']),
+            "Measures precision-focused overlap, penalizing different phrasing."
+        )
+
+    def evaluate_bert_score(self):
+        self._run_and_print_evaluation(
+            "bert_score",
+            self.positive_scenario,
+            lambda: self.classic_evaluator.evaluate_bert_score(self.positive_scenario['answer'], self.positive_scenario['ground_truth']),
+            "Measures semantic similarity using BERT embeddings."
+        )
+
+    def evaluate_retrieval_metrics(self):
+        print_header("Retrieval Metrics (Precision@K, Recall@K, MRR)")
+        # Using the negative scenario as it has a more interesting context list
+        scenario = self.negative_scenario
+        print_inputs(scenario['question'], scenario['answer'], scenario['contexts'], scenario['ground_truth'])
+        
+        retrieval_scores = self.classic_evaluator.evaluate_retrieval_metrics(
+            retrieved_contexts=scenario['contexts'],
+            relevant_contexts=scenario['relevant_contexts']
+        )
+        print_score("retrieval_metrics", retrieval_scores, "Evaluates the quality of the retrieved context.")
+
+    def evaluate_ndcg(self):
+        print_header("Retrieval Metrics (nDCG)")
+        scenario = self.negative_scenario
+        print_inputs(scenario['question'], scenario['answer'], scenario['contexts'], scenario['ground_truth'])
+
+        ndcg_score = self.classic_evaluator.evaluate_ndcg(
+            retrieved_contexts=scenario['contexts'],
+            relevant_contexts_with_scores=scenario['relevant_contexts_with_scores']
+        )
+        print_score("ndcg", ndcg_score, "Evaluates the ranked order of retrieved items.")
+
     def run_all_evaluations(self):
         """Runs all individual and comprehensive evaluations."""
         self.evaluate_faithfulness()
@@ -159,6 +210,11 @@ class EvaluationRunner:
         self.evaluate_context_recall()
         self.evaluate_context_precision()
         self.evaluate_answer_correctness()
+        self.evaluate_rouge()
+        self.evaluate_bleu()
+        self.evaluate_bert_score()
+        self.evaluate_retrieval_metrics()
+        self.evaluate_ndcg()
 
         print_header("Comprehensive Evaluation (All Metrics)")
         try:
@@ -178,7 +234,7 @@ def main():
     """
     Main function to demonstrate the LLM evaluation framework.
     """
-    parser = argparse.ArgumentParser(description="Run Ragas evaluation metrics.")
+    parser = argparse.ArgumentParser(description="Run Ragas and Classic evaluation metrics.")
     parser.add_argument(
         "--metric",
         type=str,
@@ -189,6 +245,11 @@ def main():
             "context_recall",
             "context_precision",
             "answer_correctness",
+            "rouge",
+            "bleu",
+            "bert_score",
+            "retrieval",
+            "ndcg",
             "all",
         ],
         help="The metric to evaluate. Defaults to 'all'.",
@@ -203,6 +264,11 @@ def main():
         "context_recall": runner.evaluate_context_recall,
         "context_precision": runner.evaluate_context_precision,
         "answer_correctness": runner.evaluate_answer_correctness,
+        "rouge": runner.evaluate_rouge,
+        "bleu": runner.evaluate_bleu,
+        "bert_score": runner.evaluate_bert_score,
+        "retrieval": runner.evaluate_retrieval_metrics,
+        "ndcg": runner.evaluate_ndcg,
         "all": runner.run_all_evaluations,
     }
 
