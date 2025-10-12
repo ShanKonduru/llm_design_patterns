@@ -3,3 +3,10 @@ dotenv
 pytest
 pytest-html
 pytest-cov
+ragas
+langchain
+langchain-ollama
+ollama
+datasets
+ipython
+arize-phoenix
