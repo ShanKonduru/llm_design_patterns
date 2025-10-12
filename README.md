@@ -40,53 +40,61 @@ Follow these steps to set up the project environment on Windows.
 
 ## Usage
 
-The main application (`main.py`) allows you to run evaluations for different Ragas metrics. You can run all evaluations at once or specify a single metric.
+The main application (`main.py`) and the accompanying batch script (`004_run.bat`) allow you to run evaluations for different metrics.
 
-### Running All Evaluations
+### Running Evaluations with the Batch Script
 
-To run all available evaluation metrics sequentially, execute the `004_run.bat` script or run `main.py` without any arguments.
+The `004_run.bat` script provides a convenient way to run evaluations and view available options.
 
-```bash
-.\004_run.bat
-```
+1.  **Display Usage and Metrics:**
+    Run the script without any arguments to see a detailed list of all available metrics and their descriptions.
 
-or
+    ```bash
+    .\004_run.bat
+    ```
 
-```bash
-python main.py
-```
+2.  **Run a Specific Metric:**
+    Pass the name of a metric as an argument to the script.
 
-### Running a Specific Metric
+    ```bash
+    .\004_run.bat <metric_name>
+    ```
 
-You can evaluate a single metric by using the `--metric` command-line argument. This is useful for focused testing and debugging.
+    **Example:** To run only the `rouge` evaluation:
 
-```bash
-python main.py --metric <metric_name>
-```
+    ```bash
+    .\004_run.bat rouge
+    ```
 
-Replace `<metric_name>` with one of the following:
+3.  **Run All Metrics:**
+    To execute all available metrics sequentially, use the `all` argument.
 
-- `faithfulness`
-- `answer_relevancy`
-- `context_recall`
-- `context_precision`
-- `answer_correctness`
-
-**Example:** To run only the `faithfulness` evaluation:
-
-```bash
-python main.py --metric faithfulness
-```
+    ```bash
+    .\004_run.bat all
+    ```
 
 ## Evaluation Metrics
 
-This framework uses the following `ragas` metrics to evaluate the RAG pipeline:
+This framework uses a combination of modern LLM-judged metrics from `ragas` and classic NLP/retrieval metrics.
 
-- **Faithfulness:** Measures whether the answer is factually consistent with the provided context. A high score means the answer is well-supported by the context.
+### Ragas Metrics (LLM-as-a-judge)
+
+- **Faithfulness:** Measures whether the answer is factually consistent with the provided context.
 - **Answer Relevancy:** Assesses how relevant the answer is to the given question.
-- **Context Precision:** Measures the signal-to-noise ratio in the retrieved contexts. It checks if the contexts are relevant and to the point.
-- **Context Recall:** Evaluates whether the retrieved contexts contain all the necessary information from the ground truth to answer the question.
+- **Context Precision:** Measures the signal-to-noise ratio in the retrieved contexts (are they relevant and to the point?).
+- **Context Recall:** Evaluates whether the retrieved contexts contain all the necessary information from the ground truth.
 - **Answer Correctness:** Assesses the factual accuracy of the answer when compared to the ground truth.
+
+### Classic NLP & Retrieval Metrics
+
+- **ROUGE:** (Recall-Oriented Understudy for Gisting Evaluation) Measures n-gram overlap between the generated answer and a ground truth, focusing on recall.
+- **BLEU:** (Bilingual Evaluation Understudy) Measures n-gram overlap with a focus on precision.
+- **BERTScore:** Measures the semantic similarity between the answer and a ground truth using contextual embeddings from BERT.
+- **Retrieval Metrics:** A composite group that calculates:
+    - **Precision@K:** The proportion of retrieved documents that are relevant.
+    - **Recall@K:** The proportion of all relevant documents that were successfully retrieved.
+    - **Mean Reciprocal Rank (MRR):** The rank of the first relevant retrieved document.
+- **nDCG:** (Normalized Discounted Cumulative Gain) Evaluates the quality of the ranking of retrieved documents based on their relevance.
 
 ## Project Structure
 
@@ -94,7 +102,8 @@ This framework uses the following `ragas` metrics to evaluate the RAG pipeline:
 .
 ├── src/
 │   ├── __init__.py
-│   └── llm_evaluation.py   # Contains the RagasEvaluator class and LLM factory.
+│   ├── llm_evaluation.py   # Contains the RagasEvaluator class and LLM factory.
+│   └── classic_metrics.py  # Contains the ClassicMetricEvaluator for ROUGE, BLEU, etc.
 ├── tests/
 │   ├── __init__.py
 │   ├── test_llm_evaluation.py # Unit tests for the evaluation logic.
