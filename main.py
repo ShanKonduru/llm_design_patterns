@@ -2,6 +2,7 @@ import os
 import traceback
 import argparse
 from dotenv import load_dotenv
+from langchain_core.exceptions import OutputParserException
 from src.llm_evaluation import RagasEvaluator, LLMFactory
 
 load_dotenv()
@@ -78,8 +79,13 @@ class EvaluationRunner:
         try:
             score = evaluation_func()
             print_score(metric_name, score, explanation)
+        except OutputParserException:
+            print(f"\nAn error occurred during {metric_name} evaluation: Output Parsing Error.")
+            print("This is a known issue where the LLM fails to return a valid JSON format for this metric.")
+            print("  - Score: 0.0000 (failed)")
+            print(f"  - Raw result: None (due to parsing failure)")
         except Exception as e:
-            print(f"\nAn error occurred during {metric_name} evaluation: {e}")
+            print(f"\nAn unexpected error occurred during {metric_name} evaluation: {e}")
             traceback.print_exc()
 
     def evaluate_faithfulness(self):

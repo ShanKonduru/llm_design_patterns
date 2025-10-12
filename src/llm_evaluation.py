@@ -67,8 +67,8 @@ class RagasEvaluator:
             return result
         except Exception as e:
             print(f"An error occurred during Ragas evaluation: {e}")
-            traceback.print_exc()
-            return None
+            # Re-raise the exception so it can be caught by the caller
+            raise e
 
     def evaluate_faithfulness(self, question: str, answer: str, contexts: list[str]):
         dataset = Dataset.from_dict({"question": [question], "answer": [answer], "contexts": [contexts]})
