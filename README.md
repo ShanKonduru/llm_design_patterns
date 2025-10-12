@@ -40,63 +40,69 @@ Follow these steps to set up the project environment on Windows.
 
 ## Usage
 
-The main application (`main.py`) and the accompanying batch script (`004_run.bat`) allow you to run evaluations for different metrics.
+The `004_run.bat` script is the unified entry point for all evaluation tasks. It accepts a command as its first argument to determine which evaluation to run.
 
-### Running Evaluations with the Batch Script
+### Running Evaluations
 
-The `004_run.bat` script provides a convenient way to run evaluations and view available options.
-
-1.  **Display Usage and Metrics:**
-    Run the script without any arguments to see a detailed list of all available metrics and their descriptions.
+1.  **Display Help:**
+    Run the script without any arguments to see a detailed list of all available commands and their specific options.
 
     ```bash
     .\004_run.bat
     ```
 
-2.  **Run a Specific Metric:**
-    Pass the name of a metric as an argument to the script.
+2.  **Classic Metric Commands**
+    These commands run the original evaluation script (`individual_metrics_runner.py`) for classic NLP and Ragas metrics.
 
-    ```bash
-    .\004_run.bat <metric_name>
-    ```
+    *   **Usage:** `.\004_run.bat <metric_name>`
+    *   **Example:** To run the `faithfulness` metric:
+        ```bash
+        .\004_run.bat faithfulness
+        ```
+    *   **Available Commands:** `faithfulness`, `answer_relevancy`, `context_recall`, `context_precision`, `answer_correctness`, `classic`, `retrieval`, `all`.
 
-    **Example:** To run only the `rouge` evaluation:
+3.  **Agentic Command: `judge`**
+    This command runs an evaluation on a dataset using a single, specialized judge agent.
 
-    ```bash
-    .\004_run.bat rouge
-    ```
+    *   **Usage:** `.\004_run.bat judge --input <infile> --output <outfile> --judge <judge_name>`
+    *   **Example:** To evaluate a dataset for clarity:
+        ```bash
+        .\004_run.bat judge --input data/eval_data.csv --output results/judge_clarity_results.csv --judge clarity
+        ```
+    *   **Available Judges:** `factual`, `clarity`, `relevance`, `safety`.
 
-3.  **Run All Metrics:**
-    To execute all available metrics sequentially, use the `all` argument.
+4.  **Agentic Command: `jury`**
+    This command runs the full, multi-agent system for a comprehensive evaluation.
 
-    ```bash
-    .\004_run.bat all
-    ```
+    *   **Usage:** `.\004_run.bat jury --input <infile> --output <outfile>`
+    *   **Example:**
+        ```bash
+        .\004_run.bat jury --input data/eval_data.csv --output results/jury_final_verdict.csv
+        ```
 
-## Evaluation Metrics
+## Evaluation Metrics & Design Patterns
 
-This framework uses a combination of modern LLM-judged metrics from `ragas` and classic NLP/retrieval metrics.
+This framework has evolved to incorporate sophisticated, agent-based evaluation patterns.
 
-### Ragas Metrics (LLM-as-a-judge)
+### LLM as a Judge
+This design pattern uses a single LLM agent with a specific persona and task to evaluate a single quality dimension of a RAG system's output. For example, a `ClarityJudgeAgent` is prompted to focus solely on how clear and concise an answer is. This provides a targeted, qualitative score for a specific aspect.
 
-- **Faithfulness:** Measures whether the answer is factually consistent with the provided context.
-- **Answer Relevancy:** Assesses how relevant the answer is to the given question.
-- **Context Precision:** Measures the signal-to-noise ratio in the retrieved contexts (are they relevant and to the point?).
-- **Context Recall:** Evaluates whether the retrieved contexts contain all the necessary information from the ground truth.
-- **Answer Correctness:** Assesses the factual accuracy of the answer when compared to the ground truth.
+### LLM as a Jury
+This is a more advanced pattern where multiple, specialized "Judge" agents are orchestrated by a "Chief Justice" agent.
+1.  **The Jury:** A panel of agents (`FactualJudgeAgent`, `ClarityJudgeAgent`, `RelevanceJudgeAgent`, `SafetyJudgeAgent`) each evaluate the same RAG output from their unique perspective.
+2.  **The Chief Justice:** This agent collects the verdicts from all judges and synthesizes them into a single, comprehensive final judgment, including an overall score.
+
+This pattern provides a holistic and multi-faceted evaluation, mimicking a real-world panel of experts.
 
 ### Classic NLP & Retrieval Metrics
 
-- **ROUGE:** (Recall-Oriented Understudy for Gisting Evaluation) Measures n-gram overlap between the generated answer and a ground truth, focusing on recall.
-- **BLEU:** (Bilingual Evaluation Understudy) Measures n-gram overlap with a focus on precision.
-- **BERTScore:** Measures the semantic similarity between the answer and a ground truth using contextual embeddings from BERT.
-- **Retrieval Metrics:** A composite group that calculates:
-    - **Precision@K:** The proportion of retrieved documents that are relevant.
-    - **Recall@K:** The proportion of all relevant documents that were successfully retrieved.
-    - **Mean Reciprocal Rank (MRR):** The rank of the first relevant retrieved document.
-- **nDCG:** (Normalized Discounted Cumulative Gain) Evaluates the quality of the ranking of retrieved documents based on their relevance.
+The classic commands still support the original set of metrics:
+- **ROUGE, BLEU, BERTScore:** For generation quality.
+- **Precision@K, Recall@K, MRR, nDCG:** For retrieval quality.
 
 ## Project Structure
+
+
 
 ```text
 .
