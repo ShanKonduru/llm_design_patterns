@@ -85,18 +85,19 @@ def test_evaluate_context_precision_positive(evaluator):
         mock_evaluate.assert_called_once()
 
 @pytest.mark.positive
-def test_evaluate_context_relevance_positive(evaluator):
+def test_evaluate_context_precision_positive(evaluator):
     """
-    Tests that context relevance evaluation runs with valid inputs.
+    Tests that context precision evaluation runs with valid inputs.
     """
     with patch('src.llm_evaluation.evaluate') as mock_evaluate:
-        mock_evaluate.return_value = {"context_relevance": 1.0}
-        result = evaluator.evaluate_context_relevance(
+        mock_evaluate.return_value = {"context_precision": 1.0}
+        result = evaluator.evaluate_context_precision(
             question="What is the capital of France?",
-            contexts=["Paris is the capital and most populous city of France."]
+            contexts=["Paris is the capital and most populous city of France."],
+            ground_truth="The capital of France is Paris."
         )
-        assert "context_relevance" in result
-        assert result["context_relevance"] == 1.0
+        assert "context_precision" in result
+        assert result["context_precision"] == 1.0
         mock_evaluate.assert_called_once()
 
 @pytest.mark.positive

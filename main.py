@@ -4,6 +4,7 @@ import argparse
 from dotenv import load_dotenv
 from langchain_core.exceptions import OutputParserException
 from src.llm_evaluation import RagasEvaluator, LLMFactory
+import pandas as pd
 
 load_dotenv()
 # openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -21,29 +22,22 @@ def print_inputs(question, answer, contexts, ground_truth):
     print(f"  - Ground Truth: {ground_truth}")
 
 
-def print_score(metric_name, score_result, explanation):
-    """Prints the evaluation score for a given metric."""
-    if score_result:
-        try:
-            # The result from ragas.evaluate is an EvaluationResult object.
-            # The most reliable way to access the data is to convert it to a pandas DataFrame.
-            df = score_result.to_pandas()
-            if not df.empty and metric_name in df.columns:
-                # For a single evaluation, the score is in the first row.
-                score_value = df[metric_name].iloc[0]
-                print(f"  - {metric_name.replace('_', ' ').title()}: Evaluation succeeded.")
-                print(f"  - Score: {score_value:.4f}")
-                print(f"  - Explanation: {explanation}")
-            else:
-                print(f"  - {metric_name.replace('_', ' ').title()}: Score key not found in result DataFrame.")
-                print(f"  - Raw DataFrame: {df.to_dict()}")
-        except Exception as e:
-            print(f"  - {metric_name.replace('_', ' ').title()}: Failed to extract score from result object.")
-            print(f"  - Error: {e}")
-            print(f"  - Raw result: {score_result}")
+def print_score(metric_name, score, explanation=""):
+    """Prints the evaluation score and explanation."""
+    print(f"\n--- {metric_name} ---")
+    if explanation:
+        print(explanation)
+    
+    if score is not None:
+        # The result from ragas.evaluate can be an EvaluationResult object or a dict.
+        # Using pandas handles both cases gracefully.
+        if hasattr(score, 'to_pandas'):
+            df = score.to_pandas()
+        else:
+            df = pd.DataFrame([score])
+        print(df.to_string())
     else:
-        print(f"  - {metric_name.replace('_', ' ').title()}: Evaluation failed or returned no score.")
-        print(f"  - Raw result: {score_result}")
+        print("  - Score: N/A (evaluation failed)")
 
 
 class EvaluationRunner:
@@ -174,12 +168,8 @@ class EvaluationRunner:
                 self.positive_scenario['contexts'],
                 self.positive_scenario['ground_truth']
             )
-            print("\n--- Evaluating all metrics at once for the positive scenario ---")
-            if all_metrics_score:
-                for metric, score in all_metrics_score.items():
-                    print(f"  - {metric.replace('_', ' ').title()}: {score:.4f}")
-            else:
-                print("Evaluation failed to return scores.")
+            explanation = "\n--- Evaluating all metrics at once for the positive scenario ---"
+            print_score("comprehensive", all_metrics_score, explanation)
         except Exception as e:
             print(f"\nAn error occurred during comprehensive evaluation: {e}")
 
