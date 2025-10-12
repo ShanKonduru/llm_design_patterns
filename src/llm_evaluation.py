@@ -6,6 +6,8 @@ from ragas.metrics import (
     answer_relevancy,
     context_recall,
     context_precision,
+    ContextRelevance,
+    AnswerCorrectness,
 )
 from ragas import evaluate
 from datasets import Dataset
@@ -29,7 +31,7 @@ class OllamaLLM(LLM):
 # Factory to switch between LLMs
 class LLMFactory:
     @staticmethod
-    def get_llm(llm_type: str, **kwargs):
+    def get_llm(llm_type="ollama", **kwargs):
         if llm_type == "ollama":
             return OllamaLLM(**kwargs)
         # Future LLMs can be added here
@@ -40,14 +42,15 @@ class LLMFactory:
 
 # Ragas evaluator class
 class RagasEvaluator:
-    def __init__(self, llm: OllamaLLM):
+    def __init__(self, llm: LLM):
         self.llm = llm
-        # Explicitly configure metrics to use the provided LLM and embeddings
         self.metrics = {
             "faithfulness": faithfulness,
             "answer_relevancy": answer_relevancy,
             "context_recall": context_recall,
             "context_precision": context_precision,
+            "context_relevance": ContextRelevance(),
+            "answer_correctness": AnswerCorrectness(),
         }
 
     def _evaluate(self, dataset: Dataset, metrics: list):
@@ -75,6 +78,20 @@ class RagasEvaluator:
         dataset = Dataset.from_dict({"question": [question], "contexts": [contexts], "ground_truth": [ground_truth]})
         return self._evaluate(dataset, [self.metrics["context_precision"]])
 
+    def evaluate_context_relevance(self, question: str, contexts: list[str]):
+        """
+        Evaluates the relevance of the retrieved context to the question.
+        """
+        dataset = Dataset.from_dict({"question": [question], "contexts": [contexts]})
+        return self._evaluate(dataset, [self.metrics["context_relevance"]])
+
+    def evaluate_answer_correctness(self, question: str, answer: str, ground_truth: str):
+        """
+        Evaluates the factual correctness of the answer compared to a ground truth.
+        """
+        dataset = Dataset.from_dict({"question": [question], "answer": [answer], "ground_truth": [ground_truth]})
+        return self._evaluate(dataset, [self.metrics["answer_correctness"]])
+
     def evaluate_all(self, question: str, answer: str, contexts: list[str], ground_truth: str):
         dataset = Dataset.from_dict({
             "question": [question], 
@@ -88,5 +105,7 @@ class RagasEvaluator:
             self.metrics["answer_relevancy"],
             self.metrics["context_recall"],
             self.metrics["context_precision"],
+            self.metrics["context_relevance"],
+            self.metrics["answer_correctness"],
         ]
         return self._evaluate(dataset, metrics_to_run)

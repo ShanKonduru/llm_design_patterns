@@ -84,6 +84,38 @@ def test_evaluate_context_precision_positive(evaluator):
         assert result["context_precision"] == 1.0
         mock_evaluate.assert_called_once()
 
+@pytest.mark.positive
+def test_evaluate_context_relevance_positive(evaluator):
+    """
+    Tests that context relevance evaluation runs with valid inputs.
+    """
+    with patch('src.llm_evaluation.evaluate') as mock_evaluate:
+        mock_evaluate.return_value = {"context_relevance": 1.0}
+        result = evaluator.evaluate_context_relevance(
+            question="What is the capital of France?",
+            contexts=["Paris is the capital and most populous city of France."]
+        )
+        assert "context_relevance" in result
+        assert result["context_relevance"] == 1.0
+        mock_evaluate.assert_called_once()
+
+@pytest.mark.positive
+def test_evaluate_answer_correctness_positive(evaluator):
+    """
+    Tests that answer correctness evaluation runs with valid inputs.
+    """
+    with patch('src.llm_evaluation.evaluate') as mock_evaluate:
+        mock_evaluate.return_value = {"answer_correctness": 1.0}
+        result = evaluator.evaluate_answer_correctness(
+            question="What is the capital of France?",
+            answer="Paris is the capital of France.",
+            ground_truth="The capital of France is Paris."
+        )
+        assert "answer_correctness" in result
+        assert result["answer_correctness"] == 1.0
+        mock_evaluate.assert_called_once()
+
+
 # --- Negative Test Cases ---
 
 @pytest.mark.negative
@@ -133,6 +165,8 @@ def test_evaluate_all_metrics_edge_case(evaluator):
             "answer_relevancy": 1.0,
             "context_recall": 1.0,
             "context_precision": 1.0,
+            "context_relevance": 1.0,
+            "answer_correctness": 1.0,
         }
         result = evaluator.evaluate_all(
             question="What is the capital of France?",
@@ -140,7 +174,7 @@ def test_evaluate_all_metrics_edge_case(evaluator):
             contexts=["Paris is the capital and most populous city of France."],
             ground_truth="The capital of France is Paris."
         )
-        assert len(result) == 4
+        assert len(result) == 6
         mock_evaluate.assert_called_once()
         # Check that all metrics were passed to the evaluate call
         called_metrics = mock_evaluate.call_args[1]['metrics']
