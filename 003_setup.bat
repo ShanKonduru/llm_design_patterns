@@ -1,3 +1,5 @@
 @echo off
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+echo Installing dependencies from requirements.txt...
+pip install --upgrade -r requirements.txt
+echo Dependencies installed.
+pause

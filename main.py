@@ -10,7 +10,7 @@ def main():
     # 1. Set up sample data for evaluation
     question = "What is the capital of France?"
     answer = "The capital of France is Paris."
-    # The 'ground_truth' or 'reference' answer is needed for context_recall and context_precision
+    # The 'ground_truth' or 'reference' answer is needed for several metrics
     ground_truth = "Paris is the capital of France."
     contexts = [
         "France is a country in Western Europe.",
@@ -28,9 +28,6 @@ def main():
 
     try:
         # 2. Use the factory to get an Ollama LLM instance.
-        # You can change the model_name to any of the models you have available.
-        # For example: "llama3.1:latest", "qwen3-coder:latest", etc.
-        # Make sure you have Ollama running with the specified model.
         model_to_use = "llama3.1:latest"
         print(f"Initializing LLM from factory (model: {model_to_use})...")
         llm_instance = LLMFactory.get_llm("ollama", model_name=model_to_use)

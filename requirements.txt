@@ -10,3 +10,4 @@ ollama
 datasets
 ipython
 arize-phoenix
+torch

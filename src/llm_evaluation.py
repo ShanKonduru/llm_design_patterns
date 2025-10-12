@@ -82,4 +82,11 @@ class RagasEvaluator:
             "contexts": [contexts],
             "ground_truth": [ground_truth]
         })
-        return self._evaluate(dataset, list(self.metrics.values()))
+        # Evaluate all metrics except those that might be missing
+        metrics_to_run = [
+            self.metrics["faithfulness"],
+            self.metrics["answer_relevancy"],
+            self.metrics["context_recall"],
+            self.metrics["context_precision"],
+        ]
+        return self._evaluate(dataset, metrics_to_run)
