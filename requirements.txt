@@ -1,13 +1,18 @@
-# List your project dependencies here
-dotenv
-pytest
-pytest-html
-pytest-cov
-ragas
-langchain
-langchain-ollama
-ollama
-datasets
-ipython
-arize-phoenix
-torch
+# --- Core Application Dependencies ---
+ragas               # Core library for evaluating Retrieval Augmented Generation (RAG) pipelines.
+langchain           # Framework for building applications with Large Language Models (LLMs).
+langchain-ollama    # Specific LangChain integration for running local models with Ollama.
+ollama              # Python client for the Ollama local LLM runner.
+datasets            # Used by Ragas to structure and handle evaluation data.
+torch               # Deep learning framework, a core dependency for Ragas and embedding models.
+nvidia-ml-py        # Python library for NVIDIA GPU monitoring; replaces the deprecated pynvml.
+
+# --- Development & Testing Dependencies ---
+dotenv              # Loads environment variables from a .env file for configuration.
+pytest              # Powerful framework for writing and running Python tests.
+pytest-html         # Pytest plugin to generate HTML reports for test results.
+pytest-cov          # Pytest plugin to measure code coverage.
+
+# --- Utilities & Interactive Tools ---
+ipython             # Enhanced interactive Python shell, useful for debugging and exploration.
+arize-phoenix       # Dependency for Ragas, provides observability and tracing for LLM applications.
