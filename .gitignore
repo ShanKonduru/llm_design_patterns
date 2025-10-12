@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 test_reports\
 htmlcov\
+test_reports\*.html
 
 
 # C extensions
