@@ -1,8 +1,10 @@
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+test_reports\
+htmlcov\
+
 
 # C extensions
 *.so
@@ -173,4 +175,3 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-    
