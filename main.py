@@ -1,10 +1,10 @@
-
 import os
 from dotenv import load_dotenv
 from src.llm_evaluation import LLMFactory, RagasEvaluator
 
 load_dotenv()
 # openai_api_key = os.getenv("OPENAI_API_KEY")
+
 
 def main():
     # 1. Set up sample data for evaluation
@@ -15,7 +15,7 @@ def main():
     contexts = [
         "France is a country in Western Europe.",
         "Paris is the most populous city in France.",
-        "The Eiffel Tower is a famous landmark in Paris."
+        "The Eiffel Tower is a famous landmark in Paris.",
     ]
 
     print("Starting LLM evaluation demo...")
@@ -40,16 +40,20 @@ def main():
 
         # 4. Evaluate using individual methods
         print("Running individual evaluations...")
-        
+
         faithfulness_score = evaluator.evaluate_faithfulness(question, answer, contexts)
         print(f"Faithfulness Score: {faithfulness_score}")
 
-        answer_relevancy_score = evaluator.evaluate_answer_relevancy(question, answer, contexts)
+        answer_relevancy_score = evaluator.evaluate_answer_relevancy(
+            question, answer, contexts
+        )
         print(f"Answer Relevancy Score: {answer_relevancy_score}")
 
-        context_recall_score = evaluator.evaluate_context_recall(question, contexts, ground_truth)
+        context_recall_score = evaluator.evaluate_context_recall(
+            question, contexts, ground_truth
+        )
         print(f"Context Recall Score: {context_recall_score}")
-        
+
         print("-" * 30)
 
         # 5. Evaluate all metrics at once
@@ -64,6 +68,7 @@ def main():
     except Exception as e:
         print(f"An error occurred: {e}")
         print("Please ensure Ollama is running and the specified model is available.")
+
 
 if __name__ == "__main__":
     main()
