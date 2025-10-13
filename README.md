@@ -85,14 +85,147 @@ The `004_run.bat` script is the unified entry point for all evaluation tasks. It
 This framework has evolved to incorporate sophisticated, agent-based evaluation patterns.
 
 ### LLM as a Judge
-This design pattern uses a single LLM agent with a specific persona and task to evaluate a single quality dimension of a RAG system's output. For example, a `ClarityJudgeAgent` is prompted to focus solely on how clear and concise an answer is. This provides a targeted, qualitative score for a specific aspect.
+
+This design pattern uses a single, specialized LLM agent to evaluate one specific quality dimension of a system's output. Each "Judge" has a unique persona and a focused task, allowing for a targeted, in-depth analysis of a single aspect.
+
+For example, the `FactualJudgeAgent` is prompted to focus solely on factual consistency and accuracy, while the `ClarityJudgeAgent` assesses how clear and easy to understand an answer is. This provides a qualitative score and a written verdict for a specific evaluation criterion.
+
+#### Flowchart
+
+![LLM as a Judge](images/LLM%20as%20a%20Judge.png)
+
+<details>
+<summary>Mermaid Diagram Code</summary>
+
+```mermaid
+graph TD
+    subgraph "LLM as a Judge"
+        A[Input Data CSV] --> B[LLM_as_a_Judge.py];
+        B -- "judge='factual'" --> C{Selects};
+        C --> D[FactualJudgeAgent];
+        B -- "judge='clarity'" --> E{Selects};
+        E --> F[ClarityJudgeAgent];
+        
+        subgraph "Evaluation Loop (for each row)"
+            direction LR
+            D --> G{Evaluates};
+            F --> G;
+            G -- "Generates" --> H[Verdict & Score];
+        end
+
+        H --> I[Output Results CSV];
+    end
+```
+
+</details>
+
+#### Input
+
+The script requires an input CSV file containing the data to be evaluated. The necessary columns depend on the judge being used. For the `FactualJudgeAgent`, the following columns are required:
+
+*   `question`: The input question.
+*   `answer`: The generated answer to be evaluated.
+*   `contexts`: A string representation of a list of context documents used to generate the answer.
+*   `ground_truth`: The correct or ideal answer.
+
+**Sample Input: `evaluation_data.csv`**
+
+```csv
+question,answer,contexts,ground_truth
+"What is the capital of France?","The capital of France is Paris.","['Paris is the capital and most populous city of France.']","The capital of France is indeed Paris."
+"What is the main function of a cell's nucleus?","The nucleus controls the cell's growth and reproduction.","['The nucleus is a membrane-bound organelle that contains the cell''s genetic material.']","The nucleus directs all of the cell's activities, including growth and reproduction."
+```
+
+#### Judge Output
+
+The script generates an output CSV file containing the detailed verdict from the judge for each case.
+
+*   `case_index`: The row number from the input file.
+*   `judge`: The name of the judge agent that ran the evaluation.
+*   `score`: The final score assigned by the judge.
+*   `verdict`: The detailed written explanation from the judge.
+*   **(Optional)**: Additional columns for sub-metrics, such as `faithfulness` and `answer_correctness` from the `FactualJudgeAgent`.
+
+**Sample Output: `factual_results.csv`**
+
+```csv
+case_index,judge,score,verdict,faithfulness,answer_correctness
+0,FactualJudgeAgent,0.995,"The answer is factually consistent with the context and accurate against the ground truth...",1.0,0.99
+1,FactualJudgeAgent,0.58,"The answer is partially correct, but not entirely faithful to the context...",0.5,0.66
+```
 
 ### LLM as a Jury
-This is a more advanced pattern where multiple, specialized "Judge" agents are orchestrated by a "Chief Justice" agent.
-1.  **The Jury:** A panel of agents (`FactualJudgeAgent`, `ClarityJudgeAgent`, `RelevanceJudgeAgent`, `SafetyJudgeAgent`) each evaluate the same RAG output from their unique perspective.
-2.  **The Chief Justice:** This agent collects the verdicts from all judges and synthesizes them into a single, comprehensive final judgment, including an overall score.
 
-This pattern provides a holistic and multi-faceted evaluation, mimicking a real-world panel of experts.
+This is a more advanced pattern that orchestrates a panel of specialized "Judge" agents. A "Chief Justice" agent manages the process.
+
+1.  **The Jury Panel**: Multiple agents (`FactualJudgeAgent`, `ClarityJudgeAgent`, `RelevanceJudgeAgent`, etc.) each evaluate the same case from their unique perspective.
+2.  **The Chief Justice**: This final agent collects the verdicts and scores from all judges. It then synthesizes this information into a single, comprehensive final judgment and an overall score.
+
+This pattern provides a holistic, multi-faceted evaluation that balances different quality dimensions, mimicking a real-world panel of experts.
+
+#### Jury Flowchart
+
+![LLM as a Jury](images/LLM%20as%20a%20Jury.png)
+
+<details>
+<summary>Mermaid Diagram Code</summary>
+
+```mermaid
+graph TD
+    subgraph "LLM as a Jury"
+        A[Input Data CSV] --> B[LLM_as_a_Jury.py];
+        
+        subgraph "Evaluation Loop (for each row)"
+            direction TB
+            B --> C{Jury Panel};
+            C --> D[FactualJudgeAgent];
+            C --> E[ClarityJudgeAgent];
+            C --> F[RelevanceJudgeAgent];
+            C --> G[SafetyJudgeAgent];
+            
+            subgraph "Synthesizes Verdicts"
+                direction LR
+                D -- "Verdict" --> H{ChiefJusticeAgent};
+                E -- "Verdict" --> H;
+                F -- "Verdict" --> H;
+                G -- "Verdict" --> H;
+            end
+        end
+
+        H -- "Generates" --> I[Final Verdict & Score];
+        I --> J[Output Results CSV];
+    end
+```
+
+</details>
+
+#### Jury Input
+
+The input format is the same as for the "LLM as a Judge" pattern.
+
+**Sample Input: `evaluation_data.csv`**
+
+```csv
+question,answer,contexts,ground_truth
+"What is the capital of France?","The capital of France is Paris.","['Paris is the capital and most populous city of France.']","The capital of France is indeed Paris."
+```
+
+#### Jury Output
+
+The script generates a single CSV file containing the comprehensive final verdict from the Chief Justice, along with all the intermediate verdicts from the individual judges.
+
+*   `case_index`: The row number from the input file.
+*   `final_verdict`: The comprehensive summary from the Chief Justice.
+*   `final_score`: The final, synthesized score.
+*   `[judge_name]_score`: The score from each individual judge.
+*   `[judge_name]_verdict`: The written verdict from each individual judge.
+
+**Sample Output: `jury_final_verdict.csv`**
+
+```csv
+case_index,final_verdict,final_score,factual_score,factual_verdict,clarity_score,clarity_verdict,relevance_score,relevance_verdict
+0,"After a comprehensive review, the answer is deemed to be of high quality...",0.88,0.99,"The answer is factually sound.","0.85","The answer is clear and concise.","0.9","The answer is highly relevant."
+```
 
 ### Classic NLP & Retrieval Metrics
 
