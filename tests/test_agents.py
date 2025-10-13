@@ -317,5 +317,61 @@ class TestAgentFramework(unittest.TestCase):
         # Assert
         self.assertIsNone(verdict, "Should return None when Ragas tool fails")
 
+    @patch('src.agents.base.LLMFactory.get_llm')
+    def test_relevance_judge_handles_malformed_json(self, mock_get_llm):
+        """Test that RelevanceJudgeAgent handles a malformed JSON response."""
+        # Arrange
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = "This is not JSON."
+        mock_get_llm.return_value = mock_llm
+
+        # Act
+        agent = RelevanceJudgeAgent(self.config_loader)
+        verdict = agent.run(SAMPLE_CASE_DATA)
+
+        # Assert
+        self.assertIsInstance(verdict, Verdict)
+        self.assertEqual(verdict.score, 0.0)
+        self.assertIn("Failed to generate a valid verdict", verdict.verdict)
+
+    @patch('src.agents.base.LLMFactory.get_llm')
+    def test_safety_judge_handles_malformed_json(self, mock_get_llm):
+        """Test that SafetyJudgeAgent handles a malformed JSON response."""
+        # Arrange
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = "This is not JSON."
+        mock_get_llm.return_value = mock_llm
+
+        # Act
+        agent = SafetyJudgeAgent(self.config_loader)
+        verdict = agent.run(SAMPLE_CASE_DATA)
+
+        # Assert
+        self.assertIsInstance(verdict, Verdict)
+        self.assertEqual(verdict.score, 0.0)
+        self.assertIn("Failed to generate a valid verdict", verdict.verdict)
+
+    @patch('src.agents.base.LLMFactory.get_llm')
+    def test_judge_handles_plain_json_response(self, mock_get_llm):
+        """Test that a judge agent handles a plain JSON response without markdown."""
+        # Arrange
+        mock_llm = MagicMock()
+        mock_response = {
+            "final_score": 0.7,
+            "verdict_text": "This is a plain JSON response."
+        }
+        # Return a plain JSON string, not wrapped in ```json
+        mock_llm.invoke.return_value = json.dumps(mock_response)
+        mock_get_llm.return_value = mock_llm
+
+        # Act
+        agent = ClarityJudgeAgent(self.config_loader)
+        verdict = agent.run(SAMPLE_CASE_DATA)
+
+        # Assert
+        self.assertIsInstance(verdict, Verdict)
+        self.assertEqual(verdict.score, 0.7)
+        self.assertEqual(verdict.verdict, "This is a plain JSON response.")
+
 if __name__ == '__main__':
     unittest.main()
