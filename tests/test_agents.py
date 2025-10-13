@@ -285,7 +285,7 @@ class TestAgentFramework(unittest.TestCase):
         mock_llm.invoke.return_value = "This is not JSON."
         mock_get_llm.return_value = mock_llm
 
-        # Mock the jury to return a valid verdict
+        # Mock the jury to return a valid verdict from at least one judge
         mock_factual.return_value.run.return_value = Verdict("FactualJudgeAgent", 1.0, "Perfect.")
         mock_clarity.return_value.run.return_value = None
         mock_relevance.return_value.run.return_value = None
