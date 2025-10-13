@@ -1,3 +1,4 @@
+import json
 from typing import Dict, Any, Optional
 
 from .base import BaseAgent, Verdict, ConfigLoader
@@ -32,8 +33,8 @@ class FactualJudgeAgent(BaseAgent):
                 ground_truth=case_data['ground_truth']
             )
             
-            faithfulness = faithfulness_score.get('faithfulness', 0.0)
-            correctness = correctness_score.get('answer_correctness', 0.0)
+            faithfulness = faithfulness_score['faithfulness'][0]
+            correctness = correctness_score['answer_correctness'][0]
             
         except Exception as e:
             print(f"[{self.agent_name}] Error during Ragas evaluation: {e}")
@@ -58,12 +59,19 @@ class FactualJudgeAgent(BaseAgent):
         """
         
         try:
-            response = self.llm.invoke(reasoning_prompt)
-            # Assuming the response is a JSON string, we need to parse it.
-            # This might need a more robust parsing mechanism in a real implementation.
-            import json
-            verdict_data = json.loads(response)
+            response_text = self.llm.llm.invoke(reasoning_prompt)
+            print(f"[{self.agent_name}] Raw LLM Response:\n---\n{response_text}\n---")
+
+            # Find the JSON block in the response
+            json_start = response_text.find('{')
+            json_end = response_text.rfind('}') + 1
             
+            if json_start != -1 and json_end != 0:
+                json_str = response_text[json_start:json_end]
+                verdict_data = json.loads(json_str)
+            else:
+                raise json.JSONDecodeError("No JSON object found in response", response_text, 0)
+
             final_score = verdict_data.get("final_score", 0.0)
             verdict_text = verdict_data.get("verdict_text", "Could not generate a verdict.")
 

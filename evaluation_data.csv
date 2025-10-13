@@ -1,0 +1,4 @@
+question,answer,contexts,ground_truth
+"What is the capital of France?","The capital of France is Paris.","['Paris is the capital and most populous city of France.']","The capital of France is indeed Paris."
+"What is the main function of a cell's nucleus?","The nucleus controls the cell's growth and reproduction.","['The nucleus is a membrane-bound organelle that contains the cell''s genetic material.']","The nucleus directs all of the cell's activities, including growth and reproduction."
+"What is Python?","Python is a high-level, interpreted, general-purpose programming language.","['Python is an interpreted, high-level and general-purpose programming language.']","Python is a versatile programming language."

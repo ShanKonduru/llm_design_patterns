@@ -6,7 +6,7 @@ from src.agents import (
     FactualJudgeAgent,
     ClarityJudgeAgent,
     RelevanceJudgeAgent,
-    SafetyJudgeAgent
+    SafetyJudgeAgent,
 )
 
 # A mapping from judge names (as strings) to their corresponding classes
@@ -16,6 +16,7 @@ JUDGE_MAPPING = {
     "relevance": RelevanceJudgeAgent,
     "safety": SafetyJudgeAgent,
 }
+
 
 def main(input_file: str, output_file: str, judge_name: str):
     """
@@ -27,29 +28,40 @@ def main(input_file: str, output_file: str, judge_name: str):
         judge_name (str): The name of the judge to use for evaluation.
     """
     print(f"Initializing the 'LLM as a Judge' Evaluation Framework...")
-    
+
     # Select the judge class from the mapping
     judge_class = JUDGE_MAPPING.get(judge_name.lower())
     if not judge_class:
-        print(f"Error: Judge '{judge_name}' not found. Available judges are: {list(JUDGE_MAPPING.keys())}")
+        print(
+            f"Error: Judge '{judge_name}' not found. Available judges are: {list(JUDGE_MAPPING.keys())}"
+        )
         return
 
     # Load the agent configurations
     config_loader = ConfigLoader("agents.json")
-    
+
     # Initialize the selected judge
     judge = judge_class(config_loader)
     print(f"Using judge: {judge.agent_name}")
-    
+
     # Load the dataset to be evaluated
     print(f"Loading dataset from {input_file}...")
     try:
-        if input_file.endswith('.csv'):
-            df = pd.read_csv(input_file)
-        elif input_file.endswith(('.xls', '.xlsx')):
+        if input_file.endswith(".csv"):
+            # Use a converter to safely parse the string representation of lists
+            import ast
+            df = pd.read_csv(input_file, converters={'contexts': ast.literal_eval})
+        elif input_file.endswith((".xls", ".xlsx")):
             df = pd.read_excel(input_file)
+            # Excel might also read lists as strings, so apply a similar conversion
+            if 'contexts' in df.columns:
+                import ast
+                df['contexts'] = df['contexts'].apply(
+                    lambda x: ast.literal_eval(x) if isinstance(x, str) and x.startswith('[') else x
+                )
         else:
             raise ValueError("Unsupported input file format. Please use CSV or Excel.")
+
     except FileNotFoundError:
         print(f"Error: Input file not found at {input_file}")
         return
@@ -61,12 +73,14 @@ def main(input_file: str, output_file: str, judge_name: str):
 
     print(f"Starting evaluation for {len(df)} cases...")
     # Use tqdm for a progress bar
-    for index, row in tqdm(df.iterrows(), total=df.shape[0], desc=f"Judging with {judge.agent_name}"):
+    for index, row in tqdm(
+        df.iterrows(), total=df.shape[0], desc=f"Judging with {judge.agent_name}"
+    ):
         case_data = row.to_dict()
-        
+
         # Run the selected judge
         verdict = judge.run(case_data)
-        
+
         if verdict:
             record = {
                 "case_index": index,
@@ -85,7 +99,7 @@ def main(input_file: str, output_file: str, judge_name: str):
 
     # Convert all verdicts into a single DataFrame
     final_df = pd.DataFrame(all_verdicts)
-    
+
     # Save the results
     try:
         final_df.to_csv(output_file, index=False)
@@ -93,27 +107,30 @@ def main(input_file: str, output_file: str, judge_name: str):
     except Exception as e:
         print(f"Error saving output file: {e}")
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run a single 'LLM as a Judge' evaluation.")
+    parser = argparse.ArgumentParser(
+        description="Run a single 'LLM as a Judge' evaluation."
+    )
     parser.add_argument(
         "--input",
         type=str,
         required=True,
-        help="Path to the input data file (CSV or Excel)."
+        help="Path to the input data file (CSV or Excel).",
     )
     parser.add_argument(
         "--output",
         type=str,
         required=True,
-        help="Path to save the output results (CSV)."
+        help="Path to save the output results (CSV).",
     )
     parser.add_argument(
         "--judge",
         type=str,
         required=True,
         choices=list(JUDGE_MAPPING.keys()),
-        help="The name of the judge to use for the evaluation."
+        help="The name of the judge to use for the evaluation.",
     )
-    
+
     args = parser.parse_args()
     main(input_file=args.input, output_file=args.output, judge_name=args.judge)
