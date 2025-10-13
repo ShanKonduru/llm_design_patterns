@@ -259,5 +259,63 @@ class TestAgentFramework(unittest.TestCase):
         self.assertEqual(verdict.score, 0.0)
         self.assertIn("Failed to generate a valid verdict", verdict.verdict)
 
+    @patch("builtins.open", new_callable=unittest.mock.mock_open, read_data="[invalid json")
+    def test_config_loader_bad_json(self, mock_open):
+        """Test ConfigLoader with a malformed JSON file."""
+        ConfigLoader._instance = None
+        with self.assertRaises(json.JSONDecodeError):
+            ConfigLoader("bad_config.json")
+
+    @patch("builtins.open", side_effect=FileNotFoundError)
+    def test_config_loader_file_not_found(self, mock_open):
+        """Test ConfigLoader when the config file is not found."""
+        ConfigLoader._instance = None
+        with self.assertRaises(FileNotFoundError):
+            ConfigLoader("non_existent_file.json")
+
+    @patch('src.agents.chief_justice.FactualJudgeAgent')
+    @patch('src.agents.chief_justice.ClarityJudgeAgent')
+    @patch('src.agents.chief_justice.RelevanceJudgeAgent')
+    @patch('src.agents.chief_justice.SafetyJudgeAgent')
+    @patch('src.agents.base.LLMFactory.get_llm')
+    def test_chief_justice_handles_malformed_json(self, mock_get_llm, mock_safety, mock_relevance, mock_clarity, mock_factual):
+        """Test that the ChiefJusticeAgent handles a malformed JSON response."""
+        # Arrange
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = "This is not JSON."
+        mock_get_llm.return_value = mock_llm
+
+        # Mock the jury to return a valid verdict
+        mock_factual.return_value.run.return_value = Verdict("FactualJudgeAgent", 1.0, "Perfect.")
+        mock_clarity.return_value.run.return_value = None
+        mock_relevance.return_value.run.return_value = None
+        mock_safety.return_value.run.return_value = None
+
+        chief_justice = ChiefJusticeAgent(self.config_loader)
+        
+        # Act
+        verdict = chief_justice.run(SAMPLE_CASE_DATA)
+
+        # Assert
+        self.assertIsInstance(verdict, Verdict)
+        self.assertEqual(verdict.score, 0.0) # Score is 0.0 on failure
+        self.assertIn("Failed to generate a valid final judgment", verdict.verdict)
+
+    @patch('src.agents.factual_judge.RagasEvaluator')
+    @patch('src.agents.base.LLMFactory.get_llm')
+    def test_factual_judge_handles_ragas_error(self, mock_get_llm, mock_ragas_evaluator):
+        """Test that FactualJudgeAgent handles an exception from the Ragas tool."""
+        # Arrange
+        mock_get_llm.return_value = MagicMock()
+        mock_ragas_instance = mock_ragas_evaluator.return_value
+        mock_ragas_instance.evaluate_faithfulness.side_effect = Exception("Ragas tool failed")
+
+        # Act
+        agent = FactualJudgeAgent(self.config_loader)
+        verdict = agent.run(SAMPLE_CASE_DATA)
+
+        # Assert
+        self.assertIsNone(verdict, "Should return None when Ragas tool fails")
+
 if __name__ == '__main__':
     unittest.main()
