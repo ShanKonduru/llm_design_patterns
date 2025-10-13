@@ -7,7 +7,8 @@ class ConfigLoader:
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
-            cls._instance = super(ConfigLoader, cls).__new__(cls, *args, **kwargs)
+            # Don't pass any arguments to the object's __new__ method
+            cls._instance = super(ConfigLoader, cls).__new__(cls)
         return cls._instance
 
     def __init__(self, config_path="agents.json"):
