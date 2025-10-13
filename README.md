@@ -92,7 +92,7 @@ For example, the `FactualJudgeAgent` is prompted to focus solely on factual cons
 
 #### Flowchart
 
-![LLM as a Judge](images/LLM%20as%20a%20Judge.png)
+![LLM as a Judge](images/llm_as_a_judge.png)
 
 <details>
 <summary>Mermaid Diagram Code</summary>
@@ -165,7 +165,7 @@ This pattern provides a holistic, multi-faceted evaluation that balances differe
 
 #### Jury Flowchart
 
-![LLM as a Jury](images/LLM%20as%20a%20Jury.png)
+![LLM as a Jury](images/llm_as_a_jury.png)
 
 <details>
 <summary>Mermaid Diagram Code</summary>
