@@ -351,6 +351,8 @@ Equips LLM agents with external tools, enabling them to perform actions beyond t
 
 The Tool Use pattern enables LLMs to select and execute external tools dynamically.
 
+![Tool Usage Flowchart](images/tool_usage_flowchart.png)
+
 <details>
 <summary>Mermaid Flowchart - Tool Use Pattern</summary>
 
@@ -445,6 +447,8 @@ Decomposes complex goals into sequential steps, each using appropriate tools.
 #### Plan-and-Execute Pattern Architecture
 
 The Plan-and-Execute pattern breaks down complex tasks into a sequence of tool-using steps.
+
+![Plan and Execute Pattern](images/Plan_and_Execute_Pattern.png)
 
 <details>
 <summary>Mermaid Flowchart - Plan-and-Execute Pattern</summary>
