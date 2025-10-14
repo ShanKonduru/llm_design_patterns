@@ -16,6 +16,7 @@ pytest-cov          # Pytest plugin to measure code coverage.
 # --- Utilities & Interactive Tools ---
 ipython             # Enhanced interactive Python shell, useful for debugging and exploration.
 arize-phoenix       # Dependency for Ragas, provides observability and tracing for LLM applications.
+requests            # HTTP library for making API calls, used by WebSearchTool for real web searches.
 
 # --- Classic NLP & Retrieval Metrics ---
 rouge-score         # For calculating ROUGE scores (n-gram overlap).

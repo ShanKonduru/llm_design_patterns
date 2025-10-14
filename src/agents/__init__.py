@@ -9,6 +9,8 @@ from .clarity_judge import ClarityJudgeAgent
 from .relevance_judge import RelevanceJudgeAgent
 from .safety_judge import SafetyJudgeAgent
 from .chief_justice import ChiefJusticeAgent
+from .tool_using_agent import ToolUsingAgent
+from .planning_agent import PlanningAgent
 
 __all__ = [
     "BaseAgent",
@@ -19,4 +21,6 @@ __all__ = [
     "RelevanceJudgeAgent",
     "SafetyJudgeAgent",
     "ChiefJusticeAgent",
+    "ToolUsingAgent",
+    "PlanningAgent",
 ]
