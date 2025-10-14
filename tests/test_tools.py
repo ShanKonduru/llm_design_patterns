@@ -376,7 +376,11 @@ class TestDateTimeToolExtended(unittest.TestCase):
     
     def test_date_is_today(self):
         """Test when target date is today."""
-        result = self.tool.execute("how many days until October 13, 2025")
+        # Use dynamic current date to avoid test failures due to date changes
+        import datetime
+        today = datetime.date.today()
+        result = self.tool.execute(f"how many days until {today.strftime('%B %d, %Y')}")
+        # Should return "That date is today!"
         self.assertIn("today", result.lower())
     
     def test_day_of_week_calculation(self):
