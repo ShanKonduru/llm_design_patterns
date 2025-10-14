@@ -1,10 +1,15 @@
-# RAG Evaluation Framework using Ragas
+# LLM Design Patterns & RAG Evaluation Framework
 
 ## Description
 
-This project provides a robust framework for evaluating the performance of Retrieval-Augmented Generation (RAG) pipelines. It utilizes the `ragas` library to assess various aspects of a RAG system's output, such as faithfulness, answer relevancy, context precision, and recall.
+This project provides a comprehensive framework for building and evaluating sophisticated LLM-based systems using proven design patterns. It combines:
 
-The framework is designed to be easily extensible and allows for testing different evaluation metrics against predefined positive and negative scenarios. This helps in systematically analyzing the strengths and weaknesses of your RAG implementation.
+1. **Advanced Design Patterns**: Judge/Jury evaluation, Tool Use, Plan-and-Execute, and Reflection/Self-Correction patterns
+2. **RAG Evaluation**: Robust evaluation framework for Retrieval-Augmented Generation (RAG) pipelines using the `ragas` library
+3. **Multi-Agent Systems**: Orchestration of specialized LLM agents for complex tasks
+4. **High Test Coverage**: 96% code coverage with 155+ comprehensive tests
+
+The framework demonstrates five powerful LLM design patterns that can be composed together for building production-ready AI systems. Each pattern addresses different challenges: evaluation (Judge/Jury), capability extension (Tool Use), task decomposition (Plan-and-Execute), and quality improvement (Reflection/Self-Correction).
 
 ## Installation
 
@@ -98,17 +103,53 @@ The `004_run.bat` script is the unified entry point for all evaluation tasks. It
         .\004_run.bat plan-and-execute "what is the square root of 256?"
         ```
 
-## Evaluation Metrics & Design Patterns
+7.  **Execution Pattern: `reflection`**
+    This command demonstrates the Reflection/Self-Correction pattern by running an agent that iteratively improves its output through self-critique.
 
-This framework has evolved to incorporate sophisticated, agent-based evaluation patterns.
+    *   **Usage:** `.\004_run.bat reflection "<task>" [--max-iterations N] [--quality-threshold 0.0-1.0]`
+    *   **Example:** To generate high-quality content:
+        ```bash
+        .\004_run.bat reflection "Write a Python function to calculate factorial"
+        ```
+    *   **Options:**
+        - `--max-iterations N`: Maximum refinement cycles (default: 3)
+        - `--quality-threshold X`: Quality score threshold 0.0-1.0 (default: 0.8)
 
-### LLM as a Judge
+---
 
-This design pattern uses a single, specialized LLM agent to evaluate one specific quality dimension of a system's output. Each "Judge" has a unique persona and a focused task, allowing for a targeted, in-depth analysis of a single aspect.
+## Design Patterns Overview
 
-For example, the `FactualJudgeAgent` is prompted to focus solely on factual consistency and accuracy, while the `ClarityJudgeAgent` assesses how clear and easy to understand an answer is. This provides a qualitative score and a written verdict for a specific evaluation criterion.
+This framework implements five sophisticated LLM design patterns. For complete documentation, see [DESIGN_PATTERNS.md](DESIGN_PATTERNS.md).
 
-#### Flowchart
+### Pattern Summary
+
+| Pattern | Purpose | Complexity | LLM Calls | Best For |
+|---------|---------|------------|-----------|----------|
+| **Judge** | Single-criterion evaluation | Low | 1-2 | Focused quality assessment |
+| **Jury** | Multi-dimensional evaluation | High | 3-6+ | Holistic quality judgment |
+| **Tool Use** | Extend LLM capabilities | Medium | Varies | Real-world data & actions |
+| **Plan-and-Execute** | Task decomposition | Medium | 2-N | Complex multi-step tasks |
+| **Reflection** | Iterative quality improvement | Medium | 3-5x | High-quality content generation |
+
+### Pattern 1: LLM as a Judge
+
+Single specialized LLM agent evaluates one specific quality dimension (factual accuracy, clarity, relevance, or safety).
+
+**Implementation**: `src/agents/factual_judge.py`, `clarity_judge.py`, `relevance_judge.py`, `safety_judge.py`
+
+**Use Cases**:
+- Targeted evaluation of specific quality dimensions
+- Quick assessment with detailed written verdicts
+- Building blocks for more complex evaluation systems
+
+**Use Cases**:
+- Targeted evaluation of specific quality dimensions
+- Quick assessment with detailed written verdicts
+- Building blocks for more complex evaluation systems
+
+#### Judge Pattern Architecture
+
+The Judge pattern uses a single specialized agent to evaluate content against one criterion.
 
 ![LLM as a Judge](images/llm_as_a_judge.png)
 
@@ -117,27 +158,37 @@ For example, the `FactualJudgeAgent` is prompted to focus solely on factual cons
 
 ```mermaid
 graph TD
-    subgraph "LLM as a Judge"
-        A[Input Data CSV] --> B[LLM_as_a_Judge.py];
-        B -- "judge='factual'" --> C{Selects};
-        C --> D[FactualJudgeAgent];
-        B -- "judge='clarity'" --> E{Selects};
-        E --> F[ClarityJudgeAgent];
+    subgraph "LLM as a Judge Pattern"
+        A[Input: Question + Answer + Context] --> B[Judge Agent Selection]
+        B -->|Factual| C[FactualJudgeAgent<br/>llama3.1]
+        B -->|Clarity| D[ClarityJudgeAgent<br/>mistral]
+        B -->|Relevance| E[RelevanceJudgeAgent<br/>llama3]
+        B -->|Safety| F[SafetyJudgeAgent<br/>gemma3]
         
-        subgraph "Evaluation Loop (for each row)"
-            direction LR
-            D --> G{Evaluates};
-            F --> G;
-            G -- "Generates" --> H[Verdict & Score];
-        end
-
-        H --> I[Output Results CSV];
+        C --> G[Evaluation Process]
+        D --> G
+        E --> G
+        F --> G
+        
+        G --> H{Generate Verdict}
+        H --> I[Numeric Score<br/>0.0 - 1.0]
+        H --> J[Written Justification]
+        H --> K[Optional Sub-Metrics]
+        
+        I --> L[Output: Verdict + Score]
+        J --> L
+        K --> L
     end
+    
+    style C fill:#e1f5ff
+    style D fill:#fff4e1
+    style E fill:#e8f5e9
+    style F fill:#fce4ec
 ```
 
 </details>
 
-#### Input
+### Pattern 2: LLM as a Jury (Multi-Agent Evaluation)
 
 The script requires an input CSV file containing the data to be evaluated. The necessary columns depend on the judge being used. For the `FactualJudgeAgent`, the following columns are required:
 
@@ -172,16 +223,20 @@ case_index,judge,score,verdict,faithfulness,answer_correctness
 1,FactualJudgeAgent,0.58,"The answer is partially correct, but not entirely faithful to the context...",0.5,0.66
 ```
 
-### LLM as a Jury
+### Pattern 2: LLM as a Jury (Multi-Agent Evaluation)
 
-This is a more advanced pattern that orchestrates a panel of specialized "Judge" agents. A "Chief Justice" agent manages the process.
+Orchestrates a panel of specialized Judge agents, with a Chief Justice synthesizing their verdicts into a comprehensive final judgment.
 
-1.  **The Jury Panel**: Multiple agents (`FactualJudgeAgent`, `ClarityJudgeAgent`, `RelevanceJudgeAgent`, etc.) each evaluate the same case from their unique perspective.
-2.  **The Chief Justice**: This final agent collects the verdicts and scores from all judges. It then synthesizes this information into a single, comprehensive final judgment and an overall score.
+**Implementation**: `src/agents/chief_justice.py` + all judge agents
 
-This pattern provides a holistic, multi-faceted evaluation that balances different quality dimensions, mimicking a real-world panel of experts.
+**Use Cases**:
+- Holistic quality assessment across multiple dimensions
+- Resolving trade-offs between competing quality aspects
+- Production evaluation systems requiring high confidence
 
-#### Jury Flowchart
+#### Jury Pattern Architecture
+
+The Jury pattern coordinates multiple specialized judges, with a Chief Justice synthesizing their verdicts.
 
 ![LLM as a Jury](images/llm_as_a_jury.png)
 
@@ -190,59 +245,417 @@ This pattern provides a holistic, multi-faceted evaluation that balances differe
 
 ```mermaid
 graph TD
-    subgraph "LLM as a Jury"
-        A[Input Data CSV] --> B[LLM_as_a_Jury.py];
+    subgraph "LLM as a Jury Pattern"
+        A[Input: Question + Answer + Context] --> B[Chief Justice Agent<br/>qwen2.5]
         
-        subgraph "Evaluation Loop (for each row)"
-            direction TB
-            B --> C{Jury Panel};
-            C --> D[FactualJudgeAgent];
-            C --> E[ClarityJudgeAgent];
-            C --> F[RelevanceJudgeAgent];
-            C --> G[SafetyJudgeAgent];
-            
-            subgraph "Synthesizes Verdicts"
-                direction LR
-                D -- "Verdict" --> H{ChiefJusticeAgent};
-                E -- "Verdict" --> H;
-                F -- "Verdict" --> H;
-                G -- "Verdict" --> H;
-            end
+        B -->|Delegates| C[Jury Panel]
+        
+        subgraph "Parallel Evaluation"
+            C --> D[FactualJudgeAgent<br/>llama3.1]
+            C --> E[ClarityJudgeAgent<br/>mistral]
+            C --> F[RelevanceJudgeAgent<br/>llama3]
+            C --> G[SafetyJudgeAgent<br/>gemma3]
         end
-
-        H -- "Generates" --> I[Final Verdict & Score];
-        I --> J[Output Results CSV];
+        
+        D -->|Verdict 1| H[Collect Verdicts]
+        E -->|Verdict 2| H
+        F -->|Verdict 3| H
+        G -->|Verdict 4| H
+        
+        H --> I[Chief Justice<br/>Synthesis]
+        
+        I --> J{Generate Final Ruling}
+        J --> K[Analyze Agreements]
+        J --> L[Resolve Conflicts]
+        J --> M[Weight Dimensions]
+        
+        K --> N[Final Verdict]
+        L --> N
+        M --> N
+        
+        N --> O[Comprehensive Score]
+        N --> P[Detailed Justification]
+        N --> Q[Individual Judge Scores]
     end
+    
+    style B fill:#fff3e0
+    style D fill:#e1f5ff
+    style E fill:#fff4e1
+    style F fill:#e8f5e9
+    style G fill:#fce4ec
+    style I fill:#fff3e0
 ```
 
 </details>
 
-#### Jury Input
+#### Input Format
 
-The input format is the same as for the "LLM as a Judge" pattern.
+The script requires an input CSV file with the following columns:
+
+#### Input Format
+
+The script requires an input CSV file with the following columns:
+
+*   `question`: The input question
+*   `answer`: The generated answer to be evaluated
+*   `contexts`: A string representation of a list of context documents
+*   `ground_truth`: The correct or ideal answer
 
 **Sample Input: `evaluation_data.csv`**
 
 ```csv
 question,answer,contexts,ground_truth
 "What is the capital of France?","The capital of France is Paris.","['Paris is the capital and most populous city of France.']","The capital of France is indeed Paris."
+"What is the main function of a cell's nucleus?","The nucleus controls the cell's growth and reproduction.","['The nucleus is a membrane-bound organelle that contains the cell''s genetic material.']","The nucleus directs all of the cell's activities, including growth and reproduction."
 ```
 
-#### Jury Output
+#### Output Format
 
-The script generates a single CSV file containing the comprehensive final verdict from the Chief Justice, along with all the intermediate verdicts from the individual judges.
+#### Output Format
 
-*   `case_index`: The row number from the input file.
-*   `final_verdict`: The comprehensive summary from the Chief Justice.
-*   `final_score`: The final, synthesized score.
-*   `[judge_name]_score`: The score from each individual judge.
-*   `[judge_name]_verdict`: The written verdict from each individual judge.
+The output CSV contains the comprehensive final verdict from the Chief Justice, along with all intermediate verdicts from individual judges:
+
+*   `case_index`: The row number from the input file
+*   `final_verdict`: The comprehensive summary from the Chief Justice
+*   `final_score`: The final synthesized score (0.0-1.0)
+*   `[judge_name]_score`: Individual score from each judge
+*   `[judge_name]_verdict`: Written verdict from each judge
 
 **Sample Output: `jury_final_verdict.csv`**
 
 ```csv
 case_index,final_verdict,final_score,factual_score,factual_verdict,clarity_score,clarity_verdict,relevance_score,relevance_verdict
-0,"After a comprehensive review, the answer is deemed to be of high quality...",0.88,0.99,"The answer is factually sound.","0.85","The answer is clear and concise.","0.9","The answer is highly relevant."
+0,"After a comprehensive review, the answer is deemed to be of high quality...",0.88,0.99,"The answer is factually sound.",0.85,"The answer is clear and concise.",0.9,"The answer is highly relevant."
+```
+
+---
+
+### Pattern 3: Tool Use Pattern (Function Calling)
+
+Equips LLM agents with external tools, enabling them to perform actions beyond text generation.
+
+**Implementation**: `src/agents/tool_using_agent.py`, `src/tools.py`
+
+**Available Tools**:
+- **WebSearch**: DuckDuckGo web search for current information
+- **Calculator**: Mathematical expression evaluation
+- **DateTime**: Date/time queries and calculations
+- **CodeInterpreter**: Safe Python code execution
+
+**Use Cases**:
+- Answering questions requiring real-time data
+- Performing calculations and data processing
+- Executing code and retrieving system information
+
+#### Tool Use Pattern Architecture
+
+The Tool Use pattern enables LLMs to select and execute external tools dynamically.
+
+<details>
+<summary>Mermaid Flowchart - Tool Use Pattern</summary>
+
+```mermaid
+graph TD
+    subgraph "Tool Use Pattern"
+        A[User Prompt] --> B[ToolUsingAgent<br/>llama3.1]
+        
+        B --> C{Analyze Task}
+        C --> D[Determine Required Tool]
+        
+        D --> E{Tool Selection}
+        
+        E -->|Math Query| F[CalculatorTool]
+        E -->|Web Query| G[WebSearchTool]
+        E -->|Date/Time Query| H[DateTimeTool]
+        E -->|Code Execution| I[CodeInterpreterTool]
+        E -->|No Tool Needed| J[Direct Answer]
+        
+        F --> K[Execute Tool]
+        G --> K
+        H --> K
+        I --> K
+        
+        K --> L[Tool Result]
+        L --> M[Synthesize Answer]
+        J --> M
+        
+        M --> N[Final Response]
+        
+        style B fill:#e3f2fd
+        style F fill:#fff9c4
+        style G fill:#f3e5f5
+        style H fill:#e0f2f1
+        style I fill:#fce4ec
+    end
+    
+    subgraph "Tool Examples"
+        F1["156 * 89 = 13,884"]
+        G1["Search: 'What is ragas?'"]
+        H1["Christmas 2025 = Thursday"]
+        I1["Execute: factorial(5)"]
+    end
+    
+    F -.-> F1
+    G -.-> G1
+    H -.-> H1
+    I -.-> I1
+```
+
+</details>
+
+#### Tool Use Examples
+
+**Mathematical Calculations**:
+```bash
+.\004_run.bat tool-use "what is 156 times 89?"
+# Output: The result of 156 times 89 is 13,884.
+```
+
+**Date/Time Queries**:
+```bash
+.\004_run.bat tool-use "what day of the week is Christmas 2025?"
+# Output: Christmas 2025 (December 25, 2025) falls on a Thursday.
+```
+
+**Web Searches**:
+```bash
+.\004_run.bat tool-use "what is ragas framework?"
+# Output: Ragas is a framework for evaluating RAG (Retrieval-Augmented Generation) pipelines...
+```
+
+**Complex Calculations**:
+```bash
+.\004_run.bat tool-use "calculate the square root of 256"
+# Output: The square root of 256 is 16.0.
+```
+
+---
+
+### Pattern 4: Plan-and-Execute Pattern
+
+Decomposes complex goals into sequential steps, each using appropriate tools.
+
+**Implementation**: `src/agents/planning_agent.py`
+
+**Use Cases**:
+- Multi-step problem solving
+- Complex queries requiring multiple tools
+- Tasks with dependencies between steps
+
+#### Plan-and-Execute Pattern Architecture
+
+The Plan-and-Execute pattern breaks down complex tasks into a sequence of tool-using steps.
+
+<details>
+<summary>Mermaid Flowchart - Plan-and-Execute Pattern</summary>
+
+```mermaid
+graph TD
+    subgraph "Plan-and-Execute Pattern"
+        A[Complex Goal] --> B[PlanningAgent<br/>llama3.1]
+        
+        B --> C{Analyze Goal}
+        C --> D[Decompose into Steps]
+        
+        D --> E[Create Structured Plan]
+        E --> F[Plan with N Steps]
+        
+        F --> G{Execute Plan Sequentially}
+        
+        subgraph "Step Execution Loop"
+            G --> H1[Step 1: Select Tool]
+            H1 --> H2[Execute Tool 1]
+            H2 --> H3[Collect Result 1]
+            
+            H3 --> I1[Step 2: Select Tool]
+            I1 --> I2[Execute Tool 2]
+            I2 --> I3[Collect Result 2]
+            
+            I3 --> J1[Step N: Select Tool]
+            J1 --> J2[Execute Tool N]
+            J2 --> J3[Collect Result N]
+        end
+        
+        J3 --> K[Aggregate Results]
+        K --> L[Synthesize Final Answer]
+        
+        L --> M[Comprehensive Response]
+        
+        style B fill:#e8eaf6
+        style E fill:#fff3e0
+        style H2 fill:#e1f5ff
+        style I2 fill:#e8f5e9
+        style J2 fill:#fce4ec
+    end
+    
+    subgraph "Example Plan"
+        P1["Step 1: Calculate 50 * 3<br/>Tool: Calculator"]
+        P2["Step 2: Find day for Dec 25, 2025<br/>Tool: DateTime"]
+        P3["Step 3: Combine results<br/>Tool: None"]
+    end
+    
+    H2 -.-> P1
+    I2 -.-> P2
+    J2 -.-> P3
+```
+
+</details>
+
+#### Plan-and-Execute Examples
+
+**Multi-Step Calculation**:
+```bash
+.\004_run.bat plan-and-execute "What is 50 times 3 and what day is Christmas 2025?"
+# Output:
+# Step 1: Calculate 50 * 3 = 150
+# Step 2: December 25, 2025 falls on Thursday
+# Final: 50 times 3 equals 150, and Christmas 2025 is on Thursday.
+```
+
+**Complex Query**:
+```bash
+.\004_run.bat plan-and-execute "Find the square root of 144 and tell me what day of the week is December 25, 2025"
+# Output:
+# Step 1: sqrt(144) = 12.0
+# Step 2: December 25, 2025 is Thursday
+# Final: The square root of 144 is 12, and December 25, 2025 falls on Thursday.
+```
+
+---
+
+### Pattern 5: Reflection/Self-Correction Pattern
+
+Enables iterative quality improvement through self-critique and refinement.
+
+**Implementation**: `src/agents/reflection_agent.py`
+
+**Key Features**:
+- Configurable iteration limits (default: 3)
+- Quality threshold settings (default: 0.8)
+- Comprehensive critique history
+- Improvement tracking
+
+**Use Cases**:
+- High-quality content generation
+- Code generation with self-debugging
+- Technical documentation writing
+- Legal/academic writing
+
+#### How Reflection Works
+
+1. **Generate**: Create initial response
+2. **Critique**: Self-evaluate with structured JSON feedback
+3. **Check**: Compare quality score against threshold
+4. **Refine**: Improve response based on critique
+5. **Iterate**: Repeat until threshold met or max iterations reached
+
+**Critique Structure**:
+```json
+{
+  "quality_score": 0.75,
+  "is_acceptable": false,
+  "issues_found": [
+    "Missing error handling",
+    "No documentation"
+  ],
+  "suggestions": [
+    "Add input validation",
+    "Include docstring"
+  ]
+}
+```
+
+#### Reflection Example
+
+```bash
+.\004_run.bat reflection "Write a Python function to calculate factorial" --max-iterations 3 --quality-threshold 0.85
+```
+
+**Iteration 1** (Quality: 0.6):
+- Issues: Missing error handling, no docstring
+- Refined version adds validation and documentation
+
+**Iteration 2** (Quality: 0.8):
+- Issues: Could optimize for large numbers
+- Refined version adds memoization
+
+**Iteration 3** (Quality: 0.9):
+- Threshold exceeded! Returns final high-quality code
+
+---
+
+## Test Coverage & Quality
+
+### Coverage Statistics
+
+- **Overall Coverage**: 96% ✅
+- **Total Tests**: 155 passing
+- **Test Framework**: pytest with comprehensive mocking
+
+### Module Coverage
+
+| Module | Coverage | Tests |
+|--------|----------|-------|
+| `src/agents/config.py` | 100% | 5 tests |
+| `src/agents/factual_judge.py` | 100% | 6 tests |
+| `src/classic_metrics.py` | 100% | 22 tests |
+| `src/tools.py` | 98% | 30 tests |
+| `src/agents/chief_justice.py` | 98% | 4 tests |
+| `src/agents/reflection_agent.py` | 96% | 18 tests |
+| `src/llm_evaluation.py` | 96% | 8 tests |
+| `src/agents/planning_agent.py` | 86% | 13 tests |
+| `src/agents/tool_using_agent.py` | 93% | 14 tests |
+
+For detailed coverage report, see [COVERAGE_96_PERCENT.md](COVERAGE_96_PERCENT.md).
+
+---
+
+## Classic NLP & RAG Metrics
+
+### Evaluation Metrics & Design Patterns
+
+This framework has evolved to incorporate sophisticated, agent-based evaluation patterns.
+
+### Input Format
+
+The script requires an input CSV file with the following columns:
+
+*   `question`: The input question.
+*   `answer`: The generated answer to be evaluated.
+*   `contexts`: A string representation of a list of context documents used to generate the answer.
+*   `ground_truth`: The correct or ideal answer.
+
+**Sample Input: `evaluation_data.csv`**
+
+```csv
+question,answer,contexts,ground_truth
+"What is the capital of France?","The capital of France is Paris.","['Paris is the capital and most populous city of France.']","The capital of France is indeed Paris."
+"What is the main function of a cell's nucleus?","The nucleus controls the cell's growth and reproduction.","['The nucleus is a membrane-bound organelle that contains the cell''s genetic material.']","The nucleus directs all of the cell's activities, including growth and reproduction."
+```
+
+#### Judge Output
+
+The script generates an output CSV file containing the detailed verdict from the judge for each case.
+
+*   `case_index`: The row number from the input file.
+*   `judge`: The name of the judge agent that ran the evaluation.
+*   `score`: The final score assigned by the judge.
+*   `verdict`: The detailed written explanation from the judge.
+*   **(Optional)**: Additional columns for sub-metrics, such as `faithfulness` and `answer_correctness` from the `FactualJudgeAgent`.
+
+**Sample Output: `factual_results.csv`**
+
+```csv
+case_index,judge,score,verdict,faithfulness,answer_correctness
+0,FactualJudgeAgent,0.995,"The answer is factually consistent with the context and accurate against the ground truth...",1.0,0.99
+1,FactualJudgeAgent,0.58,"The answer is partially correct, but not entirely faithful to the context...",0.5,0.66
+```
+
+**Sample Output: `jury_final_verdict.csv`**
+
+```csv
+case_index,final_verdict,final_score,factual_score,factual_verdict,clarity_score,clarity_verdict,relevance_score,relevance_verdict
+0,"After a comprehensive review, the answer is deemed to be of high quality...",0.88,0.99,"The answer is factually sound.",0.85,"The answer is clear and concise.",0.9,"The answer is highly relevant."
 ```
 
 ### Execution and Capability Patterns
@@ -344,47 +757,277 @@ The classic commands still support the original set of metrics:
 - **ROUGE, BLEU, BERTScore:** For generation quality.
 - **Precision@K, Recall@K, MRR, nDCG:** For retrieval quality.
 
+---
+
 ## Project Structure
 
-
-
 ```text
-.
+llm_design_patterns/
 ├── src/
 │   ├── __init__.py
-│   ├── llm_evaluation.py   # Contains the RagasEvaluator class and LLM factory.
-│   └── classic_metrics.py  # Contains the ClassicMetricEvaluator for ROUGE, BLEU, etc.
+│   ├── agents/                    # All agent implementations
+│   │   ├── __init__.py
+│   │   ├── base.py               # BaseAgent abstract class
+│   │   ├── config.py             # ConfigLoader for agent settings
+│   │   ├── factual_judge.py     # Judge for factual accuracy
+│   │   ├── clarity_judge.py     # Judge for clarity/style
+│   │   ├── relevance_judge.py   # Judge for relevance
+│   │   ├── safety_judge.py      # Judge for safety/ethics
+│   │   ├── chief_justice.py     # Synthesizes jury verdicts
+│   │   ├── tool_using_agent.py  # Tool Use pattern
+│   │   ├── planning_agent.py    # Plan-and-Execute pattern
+│   │   └── reflection_agent.py  # Reflection/Self-Correction pattern
+│   ├── tools.py                  # External tools (Calculator, WebSearch, etc.)
+│   ├── llm_evaluation.py         # RagasEvaluator and LLM factory
+│   └── classic_metrics.py        # Classic NLP metrics (ROUGE, BLEU, etc.)
 ├── tests/
 │   ├── __init__.py
-│   ├── test_llm_evaluation.py # Unit tests for the evaluation logic.
-│   └── test_main.py        # Unit tests for the main application script.
-├── .env                    # Environment variables (e.g., API keys).
-├── main.py                 # Main script to run evaluations.
-├── requirements.txt        # Project dependencies.
-├── pytest.ini              # Pytest configuration.
-├── README.md               # This file.
-└── *.bat                   # Batch scripts for Windows automation.
+│   ├── test_agents.py           # Tests for all judge agents
+│   ├── test_planning_agent.py   # Tests for PlanningAgent
+│   ├── test_tool_using_agent.py # Tests for ToolUsingAgent
+│   ├── test_reflection_agent.py # Tests for ReflectionAgent
+│   ├── test_tools.py            # Tests for external tools
+│   ├── test_llm_evaluation.py   # Tests for evaluation logic
+│   ├── test_classic_metrics.py  # Tests for classic metrics
+│   └── test_main.py             # Tests for main application
+├── images/                       # Diagrams and visualizations
+├── htmlcov/                      # HTML coverage reports
+├── docs/
+│   ├── DESIGN_PATTERNS.md       # Complete pattern documentation
+│   ├── COVERAGE_96_PERCENT.md   # Coverage achievement summary
+│   └── REFLECTION_PATTERN_IMPLEMENTATION.md  # Reflection pattern details
+├── agents.json                   # Agent configurations and personas
+├── evaluation_data.csv           # Sample evaluation data
+├── LLM_as_a_Judge.py            # Judge pattern CLI
+├── LLM_as_a_Jury.py             # Jury pattern CLI
+├── demo_reflection_pattern.py    # Reflection pattern demo
+├── execution_patterns_runner.py  # Tool Use and Planning CLI
+├── individual_metrics_runner.py  # Classic metrics CLI
+├── requirements.txt              # Project dependencies
+├── pytest.ini                    # Pytest configuration
+├── README.md                     # This file
+└── *.bat                         # Windows batch scripts for automation
 ```
+
+---
+
+## Technologies & Dependencies
+
+### Core LLM & AI Libraries
+- **langchain**: Framework for building LLM applications
+- **langchain-ollama**: Integration for local LLM models via Ollama
+- **ollama**: Python client for Ollama local LLM runner
+- **ragas**: RAG pipeline evaluation framework
+- **torch**: Deep learning framework for embeddings
+- **datasets**: Data handling and structuring
+
+### Evaluation & Metrics
+- **rouge-score**: ROUGE metrics for text overlap
+- **sacrebleu**: BLEU scores for translation quality
+- **bert-score**: Semantic similarity using BERT embeddings
+- **scikit-learn**: Classic ML metrics (MRR, nDCG)
+
+### Development & Testing
+- **pytest**: Testing framework
+- **pytest-cov**: Code coverage measurement
+- **pytest-html**: HTML test reports
+- **ipython**: Interactive Python shell
+- **dotenv**: Environment variable management
+
+### Utilities
+- **requests**: HTTP library for web searches
+- **pandas**: Data manipulation and CSV handling
+- **arize-phoenix**: LLM observability and tracing
+- **nvidia-ml-py**: GPU monitoring
+
+---
+
+## LLM Models Used
+
+This framework uses multiple LLM models via Ollama for different agent roles:
+
+| Agent | Model | Purpose |
+|-------|-------|---------|
+| FactualJudgeAgent | llama3.1:latest | Factual accuracy evaluation |
+| ClarityJudgeAgent | mistral:latest | Clarity and style assessment |
+| RelevanceJudgeAgent | llama3:latest | Relevance evaluation |
+| SafetyJudgeAgent | gemma3:latest | Safety and ethics checking |
+| ChiefJusticeAgent | qwen2.5:latest | Verdict synthesis |
+| ToolUsingAgent | llama3.1:latest | Dynamic tool selection |
+| PlanningAgent | llama3.1:latest | Multi-step planning |
+| ReflectionAgent | llama3.1:latest | Iterative refinement |
+
+**Embedding Model**: `nomic-embed-text:latest` (for RAG evaluation)
+
+---
+
+---
 
 ## Batch Scripts (Windows)
 
-This project includes the following batch files to simplify common tasks on Windows:
+This project includes comprehensive batch files for Windows workflow automation:
 
-- `000_init.bat`: Initializes the Git repository and sets up local user config.
-- `001_env.bat`: Creates a Python virtual environment named `.venv`.
-- `002_activate.bat`: Activates the `.venv` virtual environment.
-- `003_setup.bat`: Installs Python packages from `requirements.txt`.
-- `004_run.bat`: Executes the main script (`main.py`) to run all evaluations.
-- `005_run_test.bat`: Runs unit tests using `pytest`.
-- `005_run_code_cov.bat`: Runs unit tests with code coverage reporting.
-- `008_deactivate.bat`: Deactivates the virtual environment.
+### Setup Scripts
+- **`000_init.bat`**: Initialize Git repository and configure user settings
+- **`001_env.bat`**: Create Python virtual environment (`.venv`)
+- **`002_activate.bat`**: Activate the virtual environment
+- **`003_setup.bat`**: Install dependencies from `requirements.txt`
+
+### Execution Scripts
+- **`004_run.bat`**: Unified entry point for all evaluation tasks (see Usage section)
+- **`005_run_test.bat`**: Run unit tests with pytest
+- **`005_run_code_cov.bat`**: Run tests with code coverage reporting
+- **`008_deactivate.bat`**: Deactivate the virtual environment
+
+---
+
+## Pattern Composition
+
+These patterns can be combined for sophisticated multi-agent systems:
+
+### Recommended Combinations
+
+**Planning + Reflection**
+```bash
+# Create a plan, then refine each step through reflection
+# Use case: High-quality multi-step content generation
+```
+
+**Tool Use + Reflection**
+```bash
+# Use tools to gather data, then refine the answer
+# Use case: Research-backed content with quality assurance
+```
+
+**Planning + Tool Use**
+```bash
+# Already implemented! Plan-and-Execute pattern uses tools
+# Use case: Complex queries requiring multiple data sources
+```
+
+**Jury + Reflection**
+```bash
+# Generate with reflection, evaluate with jury
+# Use case: Maximum quality assurance for critical content
+```
+
+---
+
+## Quick Start Guide
+
+### 1. Setup Environment
+
+```bash
+# Initialize and setup (run once)
+.\000_init.bat      # Initialize Git
+.\001_env.bat       # Create virtual environment
+.\002_activate.bat  # Activate environment
+.\003_setup.bat     # Install dependencies
+```
+
+### 2. Install Ollama & Models
+
+Download Ollama from [ollama.ai](https://ollama.ai) and install required models:
+
+```bash
+ollama pull llama3.1:latest
+ollama pull mistral:latest
+ollama pull llama3:latest
+ollama pull gemma3:latest
+ollama pull qwen2.5:latest
+ollama pull nomic-embed-text:latest
+```
+
+### 3. Run Pattern Examples
+
+```bash
+# Tool Use Pattern
+.\004_run.bat tool-use "what is 156 times 89?"
+
+# Plan-and-Execute Pattern
+.\004_run.bat plan-and-execute "Calculate 50*3 and find what day is Christmas 2025"
+
+# Reflection Pattern
+.\004_run.bat reflection "Write a factorial function in Python"
+
+# Judge Pattern
+.\004_run.bat judge --input evaluation_data.csv --output results.csv --judge factual
+
+# Jury Pattern
+.\004_run.bat jury --input evaluation_data.csv --output final_verdict.csv
+```
+
+### 4. Run Tests
+
+```bash
+# Run all tests
+.\005_run_test.bat
+
+# Run with coverage report
+.\005_run_code_cov.bat
+
+# Run specific pattern tests
+pytest tests/test_reflection_agent.py -v
+pytest tests/test_planning_agent.py -v
+pytest tests/test_tool_using_agent.py -v
+```
+
+---
+
+## Documentation
+
+### Complete Documentation Files
+
+- **[DESIGN_PATTERNS.md](DESIGN_PATTERNS.md)**: Comprehensive guide to all 5 design patterns
+- **[COVERAGE_96_PERCENT.md](COVERAGE_96_PERCENT.md)**: Test coverage achievement summary
+- **[REFLECTION_PATTERN_IMPLEMENTATION.md](REFLECTION_PATTERN_IMPLEMENTATION.md)**: Detailed Reflection pattern implementation
+- **[TEST_COVERAGE_SUMMARY.md](TEST_COVERAGE_SUMMARY.md)**: Complete test suite breakdown
+
+### Code Examples
+
+- **`demo_reflection_pattern.py`**: Reflection pattern demonstrations with 4 use cases
+- **`execution_patterns_runner.py`**: Tool Use and Plan-and-Execute examples
+- **`LLM_as_a_Judge.py`**: Single judge evaluation examples
+- **`LLM_as_a_Jury.py`**: Multi-agent jury evaluation examples
+
+---
+
+## Performance Considerations
+
+### Resource Usage
+
+| Pattern | LLM Calls | Latency | Cost |
+|---------|-----------|---------|------|
+| Judge | 1-2 | Low | $ |
+| Jury | 4-6 | Medium-High | $$$ |
+| Tool Use | 1-2 | Low-Medium | $ |
+| Plan-and-Execute | 2-N | Medium | $$ |
+| Reflection | 3-5x | High | $$$ |
+
+### Optimization Tips
+
+1. **Use quality thresholds wisely**: Set appropriate thresholds to avoid unnecessary iterations
+2. **Cache tool results**: Implement caching for repeated tool calls
+3. **Parallel execution**: Run independent judge evaluations in parallel (Jury pattern)
+4. **Model selection**: Use smaller models for simple tasks, larger for complex reasoning
+5. **Batch processing**: Process multiple evaluations together when possible
+
+---
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a pull request or open an issue to discuss potential changes.
+Contributions are welcome! Areas for contribution:
+
+- **New Design Patterns**: Implement additional LLM design patterns
+- **Additional Tools**: Extend the tool library with new capabilities
+- **Performance Optimization**: Improve execution speed and resource usage
+- **Documentation**: Enhance examples and tutorials
+- **Test Coverage**: Add tests for edge cases
+
+Please submit pull requests or open issues for discussion.
+
+---
 
 ## License
-
-This project is licensed under the MIT License.
 
 This project is licensed under the MIT License.
