@@ -70,19 +70,21 @@ class TestAgentFramework(unittest.TestCase):
     @patch('src.agents.base.LLMFactory.get_llm')
     def test_factual_judge_agent(self, mock_get_llm, mock_ragas_evaluator):
         """Test the FactualJudgeAgent's run method, mocking the Ragas tool."""
-        # Arrange: Mock the LLM
+        # Arrange: Mock the LLM with nested llm attribute
         mock_llm = MagicMock()
+        mock_llm_inner = MagicMock()
         mock_response = {
             "final_score": 0.95,
             "verdict_text": "The answer is factually consistent."
         }
-        mock_llm.invoke.return_value = json.dumps(mock_response)
+        mock_llm_inner.invoke.return_value = json.dumps(mock_response)
+        mock_llm.llm = mock_llm_inner
         mock_get_llm.return_value = mock_llm
 
         # Arrange: Mock the RagasEvaluator tool
         mock_ragas_instance = mock_ragas_evaluator.return_value
-        mock_ragas_instance.evaluate_faithfulness.return_value = {"faithfulness": 1.0}
-        mock_ragas_instance.evaluate_answer_correctness.return_value = {"answer_correctness": 0.9}
+        mock_ragas_instance.evaluate_faithfulness.return_value = {"faithfulness": [1.0]}
+        mock_ragas_instance.evaluate_answer_correctness.return_value = {"answer_correctness": [0.9]}
 
         # Act: Run the agent
         agent = FactualJudgeAgent(self.config_loader)
@@ -96,7 +98,7 @@ class TestAgentFramework(unittest.TestCase):
         self.assertEqual(verdict.metrics["answer_correctness"], 0.9)
         mock_ragas_instance.evaluate_faithfulness.assert_called_once()
         mock_ragas_instance.evaluate_answer_correctness.assert_called_once()
-        mock_llm.invoke.assert_called_once()
+        mock_llm_inner.invoke.assert_called_once()
 
     @patch('src.agents.chief_justice.FactualJudgeAgent')
     @patch('src.agents.chief_justice.ClarityJudgeAgent')
@@ -372,6 +374,60 @@ class TestAgentFramework(unittest.TestCase):
         self.assertIsInstance(verdict, Verdict)
         self.assertEqual(verdict.score, 0.7)
         self.assertEqual(verdict.verdict, "This is a plain JSON response.")
+
+    def test_config_loader_get_agent_config_not_found(self):
+        """Test ConfigLoader.get_agent_config when agent is not found."""
+        with self.assertRaises(ValueError) as context:
+            self.config_loader.get_agent_config("NonExistentAgent")
+        self.assertIn("NonExistentAgent", str(context.exception))
+
+    def test_config_loader_get_embedding_model_config(self):
+        """Test ConfigLoader.get_embedding_model_config."""
+        model_key = "ragas_embeddings"
+        model_config = self.config_loader.get_embedding_model_config(model_key)
+        self.assertIsNotNone(model_config)
+
+    def test_config_loader_get_embedding_model_config_not_found(self):
+        """Test ConfigLoader.get_embedding_model_config when model is not found."""
+        with self.assertRaises(ValueError) as context:
+            self.config_loader.get_embedding_model_config("NonExistentModel")
+        self.assertIn("NonExistentModel", str(context.exception))
+
+    @patch('src.agents.factual_judge.RagasEvaluator')
+    @patch('src.agents.base.LLMFactory.get_llm')
+    def test_factual_judge_no_json_in_response(self, mock_get_llm, mock_ragas_evaluator):
+        """Test FactualJudgeAgent when LLM response has no JSON."""
+        # Arrange
+        mock_llm = MagicMock()
+        mock_llm_inner = MagicMock()
+        mock_llm_inner.invoke.return_value = "No JSON here"
+        mock_llm.llm = mock_llm_inner
+        mock_get_llm.return_value = mock_llm
+
+        mock_ragas_instance = mock_ragas_evaluator.return_value
+        mock_ragas_instance.evaluate_faithfulness.return_value = {"faithfulness": [1.0]}
+        mock_ragas_instance.evaluate_answer_correctness.return_value = {"answer_correctness": [0.9]}
+
+        # Act
+        agent = FactualJudgeAgent(self.config_loader)
+        verdict = agent.run(SAMPLE_CASE_DATA)
+
+        # Assert
+        self.assertIsInstance(verdict, Verdict)
+        self.assertEqual(verdict.score, 0.0)
+        self.assertIn("Failed to generate a valid verdict", verdict.verdict)
+
+    @patch('src.agents.base.LLMFactory.get_llm')
+    def test_base_agent_initialization(self, mock_get_llm):
+        """Test base agent initialization through ClarityJudgeAgent."""
+        mock_llm = MagicMock()
+        mock_get_llm.return_value = mock_llm
+
+        agent = ClarityJudgeAgent(self.config_loader)
+        
+        self.assertEqual(agent.agent_name, "ClarityJudgeAgent")
+        self.assertIsNotNone(agent.llm)
+        self.assertIsNotNone(agent.persona)
 
 if __name__ == '__main__':
     unittest.main()

@@ -188,3 +188,66 @@ def test_llm_factory_edge_unsupported_type():
     """
     with pytest.raises(ValueError):
         LLMFactory.get_llm("unsupported_llm_type")
+
+@pytest.mark.positive
+def test_llm_factory_ollama():
+    """
+    Test that LLMFactory creates an Ollama LLM correctly.
+    """
+    with patch('src.llm_evaluation.OllamaWrapper') as mock_ollama:
+        mock_instance = MagicMock()
+        mock_ollama.return_value = mock_instance
+        
+        llm = LLMFactory.get_llm("ollama", model_name="llama3.1:latest")
+        
+        assert llm is not None
+        mock_ollama.assert_called_once_with(model_name="llama3.1:latest")
+
+@pytest.mark.positive
+def test_llm_factory_default():
+    """
+    Test that LLMFactory creates an Ollama LLM by default.
+    """
+    with patch('src.llm_evaluation.OllamaWrapper') as mock_ollama:
+        mock_instance = MagicMock()
+        mock_ollama.return_value = mock_instance
+        
+        llm = LLMFactory.get_llm()
+        
+        assert llm is not None
+        mock_ollama.assert_called_once()
+
+@pytest.mark.positive
+def test_ollama_wrapper_initialization():
+    """
+    Test OllamaWrapper initialization.
+    """
+    with patch('src.llm_evaluation.OllamaLLM') as mock_llm_class:
+        with patch('src.llm_evaluation.OllamaEmbeddings') as mock_emb_class:
+            mock_llm = MagicMock()
+            mock_emb = MagicMock()
+            mock_llm_class.return_value = mock_llm
+            mock_emb_class.return_value = mock_emb
+            
+            from src.llm_evaluation import OllamaWrapper
+            wrapper = OllamaWrapper("test-model")
+            
+            assert wrapper.llm is not None
+            assert wrapper.embeddings is not None
+            mock_llm_class.assert_called_once_with(model="test-model")
+            mock_emb_class.assert_called_once_with(model="nomic-embed-text")
+
+@pytest.mark.negative
+def test_evaluate_error_handling(evaluator):
+    """
+    Test that evaluation handles errors properly.
+    """
+    with patch('src.llm_evaluation.evaluate') as mock_evaluate:
+        mock_evaluate.side_effect = Exception("Evaluation failed")
+        
+        with pytest.raises(Exception):
+            evaluator.evaluate_faithfulness(
+                question="What is the capital of France?",
+                answer="Paris.",
+                contexts=["Paris is the capital."]
+            )
