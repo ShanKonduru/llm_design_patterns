@@ -11,6 +11,7 @@ from .safety_judge import SafetyJudgeAgent
 from .chief_justice import ChiefJusticeAgent
 from .tool_using_agent import ToolUsingAgent
 from .planning_agent import PlanningAgent
+from .reflection_agent import ReflectionAgent
 
 __all__ = [
     "BaseAgent",
@@ -23,4 +24,5 @@ __all__ = [
     "ChiefJusticeAgent",
     "ToolUsingAgent",
     "PlanningAgent",
+    "ReflectionAgent",
 ]
