@@ -4,12 +4,12 @@
 
 This project provides a comprehensive framework for building and evaluating sophisticated LLM-based systems using proven design patterns. It combines:
 
-1. **Advanced Design Patterns**: Judge/Jury evaluation, Tool Use, Plan-and-Execute, and Reflection/Self-Correction patterns
+1. **Advanced Design Patterns**: Judge/Jury evaluation, Tool Use, Plan-and-Execute, Reflection/Self-Correction, and Multi-Agent Collaboration patterns
 2. **RAG Evaluation**: Robust evaluation framework for Retrieval-Augmented Generation (RAG) pipelines using the `ragas` library
-3. **Multi-Agent Systems**: Orchestration of specialized LLM agents for complex tasks
-4. **High Test Coverage**: 96% code coverage with 155+ comprehensive tests
+3. **Multi-Agent Systems**: Orchestration of specialized LLM agents for complex software engineering tasks
+4. **High Test Coverage**: 96% code coverage with 176 comprehensive tests (100% passing)
 
-The framework demonstrates five powerful LLM design patterns that can be composed together for building production-ready AI systems. Each pattern addresses different challenges: evaluation (Judge/Jury), capability extension (Tool Use), task decomposition (Plan-and-Execute), and quality improvement (Reflection/Self-Correction).
+The framework demonstrates **six powerful LLM design patterns** that can be composed together for building production-ready AI systems. Each pattern addresses different challenges: evaluation (Judge/Jury), capability extension (Tool Use), task decomposition (Plan-and-Execute), quality improvement (Reflection/Self-Correction), and team collaboration (Multi-Agent).
 
 ## Installation
 
@@ -115,11 +115,26 @@ The `004_run.bat` script is the unified entry point for all evaluation tasks. It
         - `--max-iterations N`: Maximum refinement cycles (default: 3)
         - `--quality-threshold X`: Quality score threshold 0.0-1.0 (default: 0.8)
 
+8.  **Execution Pattern: `collaborate`**
+    This command demonstrates the Multi-Agent Collaboration pattern by running a team of specialized AI agents working together.
+
+    *   **Usage:** `.\004_run.bat collaborate [mode]`
+    *   **Modes:**
+        - `sequential`: Agents work in pipeline (Planner → Coder → Tester → Reviewer)
+        - `parallel`: All agents analyze simultaneously, then synthesize
+        - `hierarchical`: Coordinator manages and delegates to specialists (default)
+    *   **Examples:**
+        ```bash
+        .\004_run.bat collaborate sequential
+        .\004_run.bat collaborate parallel
+        .\004_run.bat collaborate hierarchical
+        ```
+
 ---
 
 ## Design Patterns Overview
 
-This framework implements five sophisticated LLM design patterns. For complete documentation, see [DESIGN_PATTERNS.md](DESIGN_PATTERNS.md).
+This framework implements six sophisticated LLM design patterns. For complete documentation, see [DESIGN_PATTERNS.md](DESIGN_PATTERNS.md).
 
 ### Pattern Summary
 
@@ -130,6 +145,7 @@ This framework implements five sophisticated LLM design patterns. For complete d
 | **Tool Use** | Extend LLM capabilities | Medium | Varies | Real-world data & actions |
 | **Plan-and-Execute** | Task decomposition | Medium | 2-N | Complex multi-step tasks |
 | **Reflection** | Iterative quality improvement | Medium | 3-5x | High-quality content generation |
+| **Multi-Agent Collaboration** | Specialized agent teamwork | High | 4-N | Complex software engineering tasks |
 
 ### Pattern 1: LLM as a Judge
 
@@ -588,13 +604,318 @@ Enables iterative quality improvement through self-critique and refinement.
 
 ---
 
+### Pattern 6: Multi-Agent Collaboration Pattern
+
+Orchestrates multiple specialized AI agents working together to solve complex software engineering tasks through three collaboration modes: Sequential (pipeline), Parallel (simultaneous analysis), and Hierarchical (coordinator-managed).
+
+**Implementation**: `src/agents/collaboration_agent.py`, `src/agents/software_team.py`
+
+**Specialized Agents**:
+- **PlannerAgent** (llama3.1): Creates technical specifications and development plans
+- **CoderAgent** (llama3.1): Writes clean, production-ready code following specifications
+- **TesterAgent** (mistral): Designs comprehensive test cases and quality assurance
+- **ReviewerAgent** (qwen2.5): Conducts code reviews with actionable feedback
+- **CoordinatorAgent** (llama3.1): Manages team workflow and synthesizes deliverables
+
+**Collaboration Modes**:
+
+1. **Sequential Mode**: Agents work in pipeline fashion
+   - Planner → Coder → Tester → Reviewer
+   - Each agent builds on previous output
+   - Best for structured software development workflows
+
+2. **Parallel Mode**: Agents analyze simultaneously
+   - All agents process the same requirements independently
+   - Coordinator synthesizes diverse perspectives
+   - Best for exploratory analysis and comprehensive reviews
+
+3. **Hierarchical Mode**: Coordinator manages specialists
+   - Coordinator creates master plan
+   - Delegates specific tasks to specialists
+   - Synthesizes results into final deliverable
+   - Best for complex projects requiring orchestration
+
+**Use Cases**:
+- Software development task automation
+- Code generation with comprehensive testing
+- Technical specification creation
+- Multi-perspective system analysis
+- Full-cycle feature development
+
+#### Multi-Agent Collaboration Architectures
+
+##### Sequential Collaboration Mode
+
+The Sequential mode creates a development pipeline where each agent enhances the previous agent's work.
+
+![Sequential Collaboration Mode](images/Sequential_Collaboration_Mode.png)
+
+<details>
+<summary>Mermaid Flowchart - Sequential Collaboration</summary>
+
+```mermaid
+graph TD
+    subgraph "Sequential Collaboration Mode"
+        A[Task Requirements] --> B[CollaborationOrchestrator]
+        
+        B --> C[Step 1: Planning Phase]
+        C --> D[PlannerAgent<br/>llama3.1]
+        D --> E[Technical Specification]
+        
+        E --> F[Step 2: Development Phase]
+        F --> G[CoderAgent<br/>llama3.1]
+        G --> H[Implementation Code]
+        
+        H --> I[Step 3: Testing Phase]
+        I --> J[TesterAgent<br/>mistral]
+        J --> K[Test Cases & Report]
+        
+        K --> L[Step 4: Review Phase]
+        L --> M[ReviewerAgent<br/>qwen2.5]
+        M --> N[Code Review & Approval]
+        
+        N --> O[Final Deliverable]
+        O --> P[✓ Plan<br/>✓ Code<br/>✓ Tests<br/>✓ Review]
+        
+        style D fill:#e3f2fd
+        style G fill:#e8f5e9
+        style J fill:#fff9c4
+        style M fill:#fce4ec
+        style B fill:#f3e5f5
+    end
+    
+    subgraph "Agent Specializations"
+        D1["Expert in architecture<br/>& design patterns"]
+        G1["Production-quality<br/>code generator"]
+        J1["QA specialist with<br/>edge case focus"]
+        M1["Senior reviewer with<br/>best practices"]
+    end
+    
+    D -.-> D1
+    G -.-> G1
+    J -.-> J1
+    M -.-> M1
+```
+
+</details>
+
+##### Parallel Collaboration Mode
+
+The Parallel mode runs all agents simultaneously for comprehensive multi-perspective analysis.
+
+<details>
+<summary>Mermaid Flowchart - Parallel Collaboration</summary>
+
+```mermaid
+graph TD
+    subgraph "Parallel Collaboration Mode"
+        A[Task Requirements] --> B[CollaborationOrchestrator]
+        
+        B --> C{Broadcast to All Agents}
+        
+        subgraph "Simultaneous Analysis"
+            C -->|Same Input| D[PlannerAgent<br/>llama3.1]
+            C -->|Same Input| E[CoderAgent<br/>llama3.1]
+            C -->|Same Input| F[TesterAgent<br/>mistral]
+            C -->|Same Input| G[ReviewerAgent<br/>qwen2.5]
+        end
+        
+        D --> H1[Architecture Perspective]
+        E --> H2[Implementation Perspective]
+        F --> H3[Quality Perspective]
+        G --> H4[Best Practices Perspective]
+        
+        H1 --> I[Collect All Outputs]
+        H2 --> I
+        H3 --> I
+        H4 --> I
+        
+        I --> J[CoordinatorAgent<br/>llama3.1]
+        
+        J --> K{Synthesize Perspectives}
+        K --> L[Identify Agreements]
+        K --> M[Resolve Conflicts]
+        K --> N[Create Unified View]
+        
+        L --> O[Comprehensive Analysis]
+        M --> O
+        N --> O
+        
+        O --> P[Multi-Dimensional<br/>Final Report]
+        
+        style D fill:#e3f2fd
+        style E fill:#e8f5e9
+        style F fill:#fff9c4
+        style G fill:#fce4ec
+        style J fill:#f3e5f5
+        style B fill:#ede7f6
+    end
+```
+
+</details>
+
+##### Hierarchical Collaboration Mode
+
+The Hierarchical mode uses a coordinator to manage specialists and synthesize their work.
+
+<details>
+<summary>Mermaid Flowchart - Hierarchical Collaboration</summary>
+
+```mermaid
+graph TD
+    subgraph "Hierarchical Collaboration Mode"
+        A[Complex Task] --> B[CoordinatorAgent<br/>llama3.1<br/>Team Lead]
+        
+        B --> C{Analyze & Decompose}
+        C --> D[Create Master Plan]
+        
+        D --> E{Delegate Subtasks}
+        
+        subgraph "Specialist Work"
+            E -->|Subtask 1| F[PlannerAgent<br/>Design Phase]
+            E -->|Subtask 2| G[CoderAgent<br/>Implementation]
+            E -->|Subtask 3| H[TesterAgent<br/>QA Phase]
+        end
+        
+        F --> I1[Design Document]
+        G --> I2[Implementation Code]
+        H --> I3[Test Suite]
+        
+        I1 --> J[Coordinator Review]
+        I2 --> J
+        I3 --> J
+        
+        J --> K{Quality Check}
+        K -->|Issues Found| L[Request Revisions]
+        L --> E
+        
+        K -->|Approved| M[Synthesize Deliverables]
+        
+        M --> N[Final Project Summary]
+        N --> O[✓ Integrated Plan<br/>✓ Complete Code<br/>✓ Full Test Coverage<br/>✓ Team Report]
+        
+        style B fill:#f3e5f5
+        style F fill:#e3f2fd
+        style G fill:#e8f5e9
+        style H fill:#fff9c4
+        style M fill:#fff3e0
+    end
+    
+    subgraph "Coordinator Responsibilities"
+        R1["Task decomposition"]
+        R2["Work delegation"]
+        R3["Progress tracking"]
+        R4["Quality assurance"]
+        R5["Final synthesis"]
+    end
+    
+    B -.-> R1
+    B -.-> R2
+    J -.-> R3
+    K -.-> R4
+    M -.-> R5
+```
+
+</details>
+
+#### Multi-Agent Collaboration Examples
+
+**Sequential Mode - Full Development Cycle**:
+```bash
+.\004_run.bat collaborate sequential
+
+# Output demonstrates complete pipeline:
+# 1. PlannerAgent: Creates technical specification for Fibonacci function
+# 2. CoderAgent: Implements production-ready code with error handling
+# 3. TesterAgent: Generates comprehensive test cases (happy path, edge cases, errors)
+# 4. ReviewerAgent: Conducts code review with improvement suggestions
+```
+
+**Parallel Mode - Multi-Perspective Analysis**:
+```bash
+.\004_run.bat collaborate parallel
+
+# Output shows simultaneous analysis:
+# - PlannerAgent: Architectural recommendations
+# - CoderAgent: Implementation strategies  
+# - TesterAgent: Quality concerns and test approach
+# - ReviewerAgent: Best practice considerations
+# - Coordinator: Synthesized unified recommendation
+```
+
+**Hierarchical Mode - Coordinated Development**:
+```bash
+.\004_run.bat collaborate hierarchical
+
+# Output demonstrates orchestrated workflow:
+# 1. Coordinator: Creates master project plan
+# 2. Specialists: Each completes assigned subtasks
+# 3. Coordinator: Reviews and synthesizes all work
+# 4. Final: Integrated deliverable with team summary
+```
+
+#### Agent Collaboration Summary
+
+```mermaid
+graph LR
+    subgraph "Multi-Agent System Components"
+        A[CollaborationOrchestrator] --> B[Mode Selection]
+        
+        B -->|Sequential| C[Pipeline Flow]
+        B -->|Parallel| D[Broadcast & Synthesize]
+        B -->|Hierarchical| E[Coordinator Managed]
+        
+        subgraph "Agent Pool"
+            F[PlannerAgent]
+            G[CoderAgent]
+            H[TesterAgent]
+            I[ReviewerAgent]
+            J[CoordinatorAgent]
+        end
+        
+        C --> F
+        C --> G
+        C --> H
+        C --> I
+        
+        D --> F
+        D --> G  
+        D --> H
+        D --> I
+        D --> J
+        
+        E --> J
+        J --> F
+        J --> G
+        J --> H
+        J --> I
+    end
+    
+    style A fill:#f3e5f5
+    style F fill:#e3f2fd
+    style G fill:#e8f5e9
+    style H fill:#fff9c4
+    style I fill:#fce4ec
+    style J fill:#fff3e0
+```
+
+**Key Benefits**:
+- ✅ **Specialized Expertise**: Each agent focuses on specific domain
+- ✅ **Quality Assurance**: Built-in testing and code review
+- ✅ **Flexible Workflows**: Three modes for different scenarios
+- ✅ **Production Ready**: Comprehensive output with documentation
+- ✅ **Scalable**: Easy to add new specialized agents
+
+---
+
 ## Test Coverage & Quality
 
 ### Coverage Statistics
 
 - **Overall Coverage**: 96% ✅
-- **Total Tests**: 155 passing
+- **Total Tests**: 176 passing (100% success rate)
 - **Test Framework**: pytest with comprehensive mocking
+- **Test Execution Time**: ~20 seconds
 
 ### Module Coverage
 
@@ -602,6 +923,8 @@ Enables iterative quality improvement through self-critique and refinement.
 |--------|----------|-------|
 | `src/agents/config.py` | 100% | 5 tests |
 | `src/agents/factual_judge.py` | 100% | 6 tests |
+| `src/agents/collaboration_agent.py` | 98% | 8 tests |
+| `src/agents/software_team.py` | 97% | 13 tests |
 | `src/classic_metrics.py` | 100% | 22 tests |
 | `src/tools.py` | 98% | 30 tests |
 | `src/agents/chief_justice.py` | 98% | 4 tests |
@@ -609,6 +932,16 @@ Enables iterative quality improvement through self-critique and refinement.
 | `src/llm_evaluation.py` | 96% | 8 tests |
 | `src/agents/planning_agent.py` | 86% | 13 tests |
 | `src/agents/tool_using_agent.py` | 93% | 14 tests |
+
+### New Pattern Tests (Multi-Agent Collaboration)
+
+- **21 new tests** added for Multi-Agent Collaboration Pattern
+- **100% test success rate** for all collaboration modes
+- Comprehensive coverage of:
+  - Sequential, Parallel, and Hierarchical collaboration
+  - All 5 specialized agents (Planner, Coder, Tester, Reviewer, Coordinator)
+  - Agent task execution and error handling
+  - Team creation and orchestration
 
 For detailed coverage report, see [COVERAGE_96_PERCENT.md](COVERAGE_96_PERCENT.md).
 
