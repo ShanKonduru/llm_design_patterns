@@ -585,6 +585,87 @@ Enables iterative quality improvement through self-critique and refinement.
 }
 ```
 
+#### Reflection Pattern Architecture
+
+The Reflection pattern creates an iterative improvement loop with self-critique and refinement.
+
+![Reflection Self-Correction Pattern](images/Reflection_Self-Correction_Pattern.png)
+
+<details>
+<summary>Mermaid Flowchart - Reflection/Self-Correction Pattern</summary>
+
+```mermaid
+graph TD
+    subgraph "Reflection/Self-Correction Pattern"
+        A[Task/Prompt] --> B[ReflectionAgent<br/>llama3.1]
+        
+        B --> C[Initialize]
+        C --> D[Set max_iterations = 3]
+        C --> E[Set quality_threshold = 0.8]
+        C --> F[iteration_count = 0]
+        
+        F --> G{iteration_count <<br/>max_iterations?}
+        
+        G -->|Yes| H[Step 1: Generate Response]
+        H --> I[LLM creates initial<br/>or refined output]
+        
+        I --> J[Step 2: Self-Critique]
+        J --> K[LLM analyzes own output<br/>with structured JSON]
+        
+        K --> L{Parse Critique JSON}
+        L -->|Success| M[Extract quality_score<br/>issues & suggestions]
+        L -->|Failure| N[Use fallback score = 0.5]
+        
+        M --> O{quality_score ≥<br/>threshold?}
+        N --> O
+        
+        O -->|Yes ✓| P[Quality Acceptable!]
+        P --> Q[Return Final Response]
+        
+        O -->|No ✗| R[Quality Below Threshold]
+        R --> S[Step 3: Refine]
+        S --> T[LLM improves response<br/>based on critique]
+        
+        T --> U[iteration_count += 1]
+        U --> V[Store critique history]
+        V --> G
+        
+        G -->|No| W[Max Iterations Reached]
+        W --> X[Return Best Attempt<br/>with all critiques]
+        
+        style B fill:#e3f2fd
+        style H fill:#e8f5e9
+        style J fill:#fff9c4
+        style S fill:#fce4ec
+        style P fill:#c8e6c9
+        style W fill:#ffccbc
+    end
+    
+    subgraph "Iteration Example"
+        I1["Iteration 1: Score 0.6<br/>Issues: No error handling"]
+        I2["Iteration 2: Score 0.8<br/>Issues: Missing optimization"]
+        I3["Iteration 3: Score 0.9<br/>✓ Threshold met!"]
+    end
+    
+    subgraph "Quality Metrics"
+        Q1["✓ Completeness"]
+        Q2["✓ Correctness"]
+        Q3["✓ Best Practices"]
+        Q4["✓ Documentation"]
+    end
+    
+    H -.-> I1
+    T -.-> I2
+    T -.-> I3
+    
+    J -.-> Q1
+    J -.-> Q2
+    J -.-> Q3
+    J -.-> Q4
+```
+
+</details>
+
 #### Reflection Example
 
 ```bash
