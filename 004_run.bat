@@ -75,6 +75,16 @@ if /i "%COMMAND%"=="reflection" (
     goto :end
 )
 
+REM Multi-Agent Collaboration Pattern
+if /i "%COMMAND%"=="collaborate" (
+    echo.
+    echo [Multi-Agent Collaboration Pattern] Running collaborative agents...
+    echo.
+    shift
+    python demo_multi_agent_collaboration.py %*
+    goto :end
+)
+
 REM ============================================================================
 REM RAGAS METRICS (LLM-as-a-Judge)
 REM ============================================================================
@@ -238,6 +248,11 @@ echo   reflection           Run Reflection/Self-Correction pattern
 echo                        Options: --max-iterations N --quality-threshold X
 echo                        Example: .\004_run.bat reflection "Write a factorial function"
 echo.
+echo   collaborate          Run Multi-Agent Collaboration pattern
+echo                        Modes: sequential, parallel, hierarchical (default: sequential)
+echo                        Example: .\004_run.bat collaborate sequential
+echo                        Example: .\004_run.bat collaborate hierarchical
+echo.
 echo ============================================================================
 echo  RAGAS METRICS (LLM-as-a-Judge Evaluation)
 echo ============================================================================
@@ -291,6 +306,10 @@ echo   .\004_run.bat jury --input evaluation_data.csv --output final_verdict.csv
 echo.
 echo   REM Run Reflection pattern for high-quality code generation
 echo   .\004_run.bat reflection "Write a Python function to calculate factorial"
+echo.
+echo   REM Run Multi-Agent Collaboration pattern (software team)
+echo   .\004_run.bat collaborate sequential
+echo   .\004_run.bat collaborate hierarchical
 echo.
 echo   REM Run all classic metrics
 echo   .\004_run.bat classic
