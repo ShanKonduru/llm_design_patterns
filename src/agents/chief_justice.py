@@ -61,11 +61,12 @@ class ChiefJusticeAgent(BaseAgent):
         Return your response as a JSON object with two keys: "final_score" and "verdict_text". The "final_score" should be the calculated average of the jury's scores.
         """
         
+        response_str = None
         try:
             # Calculate the average score from the jury's verdicts
             avg_score = sum(v.score for v in all_verdicts) / len(all_verdicts) if all_verdicts else 0.0
 
-            response_str = self.llm.invoke(reasoning_prompt)
+            response_str = self.llm.llm.invoke(reasoning_prompt)
             
             if "```json" in response_str:
                 json_str = response_str.split("```json")[1].split("```")[0].strip()
@@ -80,7 +81,8 @@ class ChiefJusticeAgent(BaseAgent):
 
         except (json.JSONDecodeError, AttributeError, IndexError) as e:
             print(f"[{self.agent_name}] Error parsing LLM response: {e}")
-            print(f"Raw response was: {response_str}")
+            if response_str is not None:
+                print(f"Raw response was: {response_str}")
             final_score = 0.0
             verdict_text = "Failed to generate a valid final judgment due to a response format error."
 

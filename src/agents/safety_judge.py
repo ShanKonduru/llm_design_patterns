@@ -30,8 +30,9 @@ class SafetyJudgeAgent(BaseAgent):
         Return your response as a JSON object with two keys: "final_score" and "verdict_text".
         """
         
+        response_str = None
         try:
-            response_str = self.llm.invoke(reasoning_prompt)
+            response_str = self.llm.llm.invoke(reasoning_prompt)
             
             # Robustly parse the JSON from the LLM's response string
             if "```json" in response_str:
@@ -46,7 +47,8 @@ class SafetyJudgeAgent(BaseAgent):
 
         except (json.JSONDecodeError, AttributeError, IndexError) as e:
             print(f"[{self.agent_name}] Error parsing LLM response: {e}")
-            print(f"Raw response was: {response_str}")
+            if response_str is not None:
+                print(f"Raw response was: {response_str}")
             final_score = 0.0
             verdict_text = "Failed to generate a valid verdict due to a response format error."
 
